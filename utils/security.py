@@ -50,20 +50,29 @@ def verify_file_content(filepath):
     """
     Verify actual file content matches expected type.
     Returns (is_valid, detected_mime).
+    Falls back to extension check if python-magic unavailable.
     """
+    if not MAGIC_AVAILABLE:
+        # Fallback: check extension only
+        ext = os.path.splitext(filepath)[1].lower()
+        allowed_exts = {".xlsx", ".xls", ".csv"}
+        is_valid = ext in allowed_exts
+        return is_valid, f"extension:{ext}"
+
     try:
         mime = magic.from_file(filepath, mime=True)
         is_valid = mime in ALLOWED_MIME_TYPES
 
-        # Special case: some CSV files get detected as text/plain
         if not is_valid and mime.startswith("text/"):
             is_valid = True
 
         return is_valid, mime
     except Exception as e:
         print("File verification error:", e)
-        return False, "unknown"
-
+        # Fallback to extension check
+        ext = os.path.splitext(filepath)[1].lower()
+        allowed_exts = {".xlsx", ".xls", ".csv"}
+        return ext in allowed_exts, f"fallback:{ext}"
 
 # ==========================================================
 # SECURE FILE SAVE
