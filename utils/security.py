@@ -3,10 +3,15 @@
 
 import os
 import re
-import magic
+
+try:
+    import magic
+    MAGIC_AVAILABLE = True
+except ImportError:
+    MAGIC_AVAILABLE = False
+    print("[WARN] python-magic not available, using extension-based verification")
+
 from werkzeug.utils import secure_filename
-
-
 # ==========================================================
 # ALLOWED MIME TYPES (for content verification)
 # ==========================================================
@@ -47,23 +52,24 @@ def is_safe_filename(filename):
 # DEEP FILE CONTENT VERIFICATION
 # ==========================================================
 def verify_file_content(filepath):
-    """Verify actual file content matches expected type."""
-    if not MAGIC_AVAILABLE:
-        ext = os.path.splitext(filepath)[1].lower()
-        allowed_exts = {".xlsx", ".xls", ".csv"}
-        return ext in allowed_exts, f"extension:{ext}"
-
+    """
+    Verify actual file content matches expected type.
+    Returns (is_valid, detected_mime).
+    """
     try:
         mime = magic.from_file(filepath, mime=True)
         is_valid = mime in ALLOWED_MIME_TYPES
+
+        # Special case: some CSV files get detected as text/plain
         if not is_valid and mime.startswith("text/"):
             is_valid = True
+
         return is_valid, mime
     except Exception as e:
         print("File verification error:", e)
-        ext = os.path.splitext(filepath)[1].lower()
-        allowed_exts = {".xlsx", ".xls", ".csv"}
-        return ext in allowed_exts, f"fallback:{ext}"
+        return False, "unknown"
+
+
 # ==========================================================
 # SECURE FILE SAVE
 # ==========================================================
