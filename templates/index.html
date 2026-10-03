@@ -1,0 +1,1344 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>DATAVISION BI</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+    <title>DATAVISION BI</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2300b4d8'/><text x='50' y='68' font-size='60' font-weight='bold' fill='white' text-anchor='middle' font-family='Arial'>DV</text></svg>">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+
+<body>
+
+    <!-- ======================================
+         HEADER
+    ======================================= -->
+
+    <header class="top-header">
+
+        <div class="logo">
+
+            <span class="logo-icon">IB</span>
+
+            <div>
+
+                <h1>DATAVISION</h1>
+
+                <p>Business Intelligence</p>
+
+            </div>
+
+        </div>
+
+
+        <div class="header-status">
+
+            <span class="status-dot"></span>
+
+            YAQUB "BI"
+
+        </div>
+
+    </header>
+
+
+    <!-- ======================================
+         MAIN
+    ======================================= -->
+
+    <main class="main-container">
+
+
+        <!-- ==================================
+             WELCOME
+        =================================== -->
+
+        <section class="welcome-section">
+
+            <h2>
+                Turn Your Data Into Insights
+            </h2>
+
+            <p>
+                Upload an Excel or CSV file to begin
+                your data analysis.
+            </p>
+
+        </section>
+
+
+        <!-- ==================================
+             UPLOAD AREA
+        =================================== -->
+
+        <section class="upload-section">
+
+            <div
+                id="dropZone"
+                class="drop-zone"
+            >
+
+                <div class="upload-icon">
+                    ↑
+                </div>
+
+                <h3>
+                    Drop your file here
+                </h3>
+
+                <p>
+                    or select a file from your computer
+                </p>
+
+                <label
+                    for="fileInput"
+                    class="browse-button"
+                >
+                    Browse File
+                </label>
+
+                <input
+                    type="file"
+                    id="fileInput"
+                    accept=".xlsx,.xls,.csv"
+                    hidden
+                >
+
+                <div class="supported-files">
+
+                    XLSX
+                    <span>•</span>
+                    XLS
+                    <span>•</span>
+                    CSV
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================
+             LOADING
+        =================================== -->
+
+        <div
+            id="loading"
+            class="loading hidden"
+        >
+
+            <div class="loader"></div>
+
+            <p>
+                Analyzing your data...
+            </p>
+
+        </div>
+
+
+        <!-- ==================================
+             MESSAGE
+        =================================== -->
+
+        <div
+            id="message"
+            class="message"
+        ></div>
+
+
+        <!-- ==================================
+             DATA PROFILE
+        =================================== -->
+
+        <section
+            id="profileSection"
+            class="profile-section hidden"
+        >
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        Data Profile
+                    </h2>
+
+                    <p id="fileName">
+                        File
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="stats-grid">
+
+
+                <div class="stat-card">
+
+                    <span class="stat-label">
+                        Rows
+                    </span>
+
+                    <strong id="rowCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <span class="stat-label">
+                        Columns
+                    </span>
+
+                    <strong id="columnCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <span class="stat-label">
+                        Missing Values
+                    </span>
+
+                    <strong id="missingCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <span class="stat-label">
+                        Duplicate Rows
+                    </span>
+
+                    <strong id="duplicateCount">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================================
+                 COLUMN TYPES
+            =================================== -->
+
+            <div class="analysis-grid">
+
+
+                <div class="analysis-card">
+
+                    <h3>
+                        Numeric Columns
+                    </h3>
+
+                    <div
+                        id="numericColumns"
+                        class="tag-container"
+                    ></div>
+
+                </div>
+
+
+                <div class="analysis-card">
+
+                    <h3>
+                        Date Columns
+                    </h3>
+
+                    <div
+                        id="dateColumns"
+                        class="tag-container"
+                    ></div>
+
+                </div>
+
+
+                <div class="analysis-card">
+
+                    <h3>
+                        Text Columns
+                    </h3>
+
+                    <div
+                        id="textColumns"
+                        class="tag-container"
+                    ></div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- ==================================
+                 ACTIONS
+            =================================== -->
+
+            <div class="actions-section">
+
+                <h2>
+                    Analysis Tools
+                </h2>
+
+
+                <div class="action-grid">
+
+
+                    <button
+                        class="action-button primary"
+                        onclick="createDashboard()"
+                    >
+
+                        <span>📊</span>
+
+                        Create Dashboard
+
+                    </button>
+
+
+                    <button
+                        class="action-button"
+                        onclick="createSummary()"
+                    >
+
+                        <span>📋</span>
+
+                        Create Summary
+
+                    </button>
+
+
+                    <button
+                        class="action-button"
+                        onclick="cleanData()"
+                    >
+
+                        <span>🧹</span>
+
+                        Clean Data
+
+                    </button>
+
+
+                    <button
+                        class="action-button"
+                        onclick="exploreData()"
+                    >
+
+                        <span>🔍</span>
+
+                        Explore Data
+
+                    </button>
+
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================================
+                 DATA PREVIEW
+            =================================== -->
+
+            <div class="preview-section">
+
+                <div class="preview-header">
+
+                    <h2>
+                        Data Preview
+                    </h2>
+
+                    <span>
+                        First 10 rows
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="tableContainer"
+                    class="table-container"
+                ></div>
+
+            </div>
+        
+<!-- ==========================================
+     ADVANCED DATA EXPLORER
+=========================================== -->
+
+<section
+    id="explorerSection"
+    class="preview-section hidden"
+    style="margin-top:25px;"
+>
+
+    <div class="preview-header">
+
+        <div>
+
+            <h2>
+                Advanced Data Explorer
+            </h2>
+
+            <span>
+                Explore, search and analyze your dataset
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================
+         EXPLORER CONTROLS
+    ======================================= -->
+
+    <div class="explorer-controls">
+
+
+        <div class="control-group">
+
+            <label>
+                Search Column
+            </label>
+
+            <select id="explorerColumn">
+
+                <option value="">
+                    Select Column
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label>
+                Search
+            </label>
+
+            <input
+                type="text"
+                id="explorerSearch"
+                placeholder="Search data..."
+            >
+
+        </div>
+
+
+        <button
+            class="action-button primary"
+            onclick="runExplorerSearch()"
+        >
+
+            🔍 Search
+
+        </button>
+
+
+        <button
+            class="action-button"
+            onclick="loadExplorerProfile()"
+        >
+
+            📊 Profile
+
+        </button>
+
+
+    </div>
+    
+
+    <!-- ======================================
+         EXPLORER STATS
+    ======================================= -->
+
+    <div
+        id="explorerStats"
+        class="stats-grid"
+    ></div>
+
+
+    <!-- ======================================
+         COLUMN PROFILE
+    ======================================= -->
+
+    <div
+        id="columnProfile"
+        class="analysis-grid"
+    ></div>
+
+
+    <!-- ======================================
+         EXPLORER TABLE
+    ======================================= -->
+
+    <div class="preview-section">
+
+        <div class="preview-header">
+
+            <h2>
+                Explorer Results
+            </h2>
+
+            <span id="explorerResultCount">
+                0 rows
+            </span>
+
+        </div>
+
+
+        <div
+            id="explorerTable"
+            class="table-container"
+        ></div>
+
+      </div>
+
+      </section>
+
+       
+<!-- =====================================================
+     PHASE 4 - AUTOMATIC DASHBOARD
+====================================================== -->
+
+<section
+    id="dashboardSection"
+    class="preview-section hidden"
+    style="margin-top:30px;"
+>
+
+    <div class="preview-header">
+    <div>
+        <h2>Executive Dashboard</h2>
+        <span>Automatically generated from your dataset</span>
+    </div>
+    <div class="preview-header">
+    <div>
+        <h2>Executive Dashboard</h2>
+        <span>Automatically generated from your dataset</span>
+    </div>
+    <div class="header-actions">
+        <!-- CURRENCY SELECTOR -->
+        <select class="currency-selector" id="currencySelector" onchange="changeCurrency(this.value)">
+            <option value="INR">₹ INR (Indian Rupee)</option>
+            <option value="USD">$ USD (US Dollar)</option>
+            <option value="EUR">€ EUR (Euro)</option>
+            <option value="GBP">£ GBP (British Pound)</option>
+            <option value="PKR">₨ PKR (Pakistani Rupee)</option>
+            <option value="AED">د.إ AED (UAE Dirham)</option>
+            <option value="SAR">﷼ SAR (Saudi Riyal)</option>
+            <option value="JPY">¥ JPY (Japanese Yen)</option>
+            <option value="CNY">¥ CNY (Chinese Yuan)</option>
+            <option value="CAD">C$ CAD (Canadian Dollar)</option>
+            <option value="AUD">A$ AUD (Australian Dollar)</option>
+            <option value="SGD">S$ SGD (Singapore Dollar)</option>
+            <option value="MYR">RM MYR (Malaysian Ringgit)</option>
+            <option value="BDT">৳ BDT (Bangladeshi Taka)</option>
+            <option value="NPR">₨ NPR (Nepali Rupee)</option>
+            <option value="LKR">Rs LKR (Sri Lankan Rupee)</option>
+            <option value="ZAR">R ZAR (South African Rand)</option>
+            <option value="BRL">R$ BRL (Brazilian Real)</option>
+            <option value="RUB">₽ RUB (Russian Ruble)</option>
+            <option value="TRY">₺ TRY (Turkish Lira)</option>
+        </select>
+
+        <button class="action-button" onclick="refreshDashboard()">
+            🔄 Refresh
+        </button>
+    
+    
+
+        <div class="export-dropdown">
+            <button class="action-button export-btn" onclick="toggleExportMenu(event)">
+                📥 Export
+            </button>
+            <div class="export-menu hidden" id="exportMenu">
+                <button onclick="exportDashboard('pdf')">
+                    <span>📄</span>
+                    <div>
+                        <strong>PDF Report</strong>
+                        <small>Full visual report with charts</small>
+                    </div>
+                </button>
+                <button onclick="exportDashboard('excel')">
+                    <span>📊</span>
+                    <div>
+                        <strong>Excel Report</strong>
+                        <small>Full workbook with all sheets</small>
+                    </div>
+                </button>
+                <button onclick="exportDashboard('csv')">
+                    <span>📋</span>
+                    <div>
+                        <strong>CSV Data</strong>
+                        <small>Filtered raw data only</small>
+                    </div>
+                </button>
+                <button onclick="exportDashboard('json')">
+                    <span>🔗</span>
+                    <div>
+                        <strong>JSON</strong>
+                        <small>For API integration</small>
+                    </div>
+                </button>
+                <button onclick="exportDashboard('print')">
+                    <span>🖨️</span>
+                    <div>
+                        <strong>Print</strong>
+                        <small>Browser print dialog</small>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <button type="button" onclick="openQueryEditor()" class="query-btn primary">
+            ⚡ Power Query
+        </button>
+    </div>
+</div>
+    
+<!-- =====================================================
+     DASHBOARD FILTER BAR
+====================================================== -->
+
+<div class="dashboard-filter-bar">
+
+    <div class="filter-header">
+
+        <div>
+
+            <h3>
+                Dashboard Filters
+            </h3>
+
+            <span>
+                Filters automatically update the dashboard
+            </span>
+
+        </div>
+
+        <button
+            class="reset-filter-btn"
+            onclick="resetDashboardFilters()"
+        >
+            ↻ Reset Filters
+        </button>
+
+    </div>
+
+
+    <div class="filter-grid" id="dynamicFilterGrid">
+    <!-- Filters will be generated dynamically -->
+    <div class="filter-item" style="grid-column: span 8; text-align: center; color: #94a3b8; padding: 20px;">
+        Filters will appear here based on your data
+    </div>
+ 
+
+</div>
+
+
+    <!-- ===============================================
+         KPI CARDS
+    ================================================= -->
+
+    <div
+        id="dashboardKPIs"
+        class="stats-grid"
+    ></div>
+
+
+    <!-- ===============================================
+         DASHBOARD CHARTS
+    ================================================= -->
+
+    <div class="dashboard-grid">
+
+
+       <!-- SALES TREND -->
+<div class="chart-card wide">
+    <div class="chart-header">
+        <div>
+            <h3>Sales & Profit Trend</h3>
+            <span>Monthly revenue and profitability</span>
+        </div>
+        <select class="chart-type-selector" onchange="changeChartType('salesTrendChart', this.value)">
+            <option value="line">📈 Line</option>
+            <option value="bar">📊 Bar</option>
+            <option value="area">📉 Area</option>
+        </select>
+    </div>
+    <canvas id="salesTrendChart"></canvas>
+</div>
+
+
+        <!-- PRODUCT SALES -->
+<div class="chart-card">
+    <div class="chart-header">
+        <div>
+            <h3>Product Performance</h3>
+            <span>Sales by product</span>
+        </div>
+        <select class="chart-type-selector" onchange="changeChartType('productChart', this.value)">
+            <option value="bar">📊 Bar</option>
+            <option value="horizontalBar">📋 H-Bar</option>
+            <option value="line">📈 Line</option>
+            <option value="pie">🥧 Pie</option>
+            <option value="doughnut">🍩 Doughnut</option>
+            <option value="polarArea">⭕ Polar</option>
+            <option value="radar">🎯 Radar</option>
+        </select>
+    </div>
+    <canvas id="productChart"></canvas>
+</div>
+
+
+        <!-- CATEGORY SALES -->
+<div class="chart-card">
+    <div class="chart-header">
+        <div>
+            <h3>Category Performance</h3>
+            <span>Sales by category</span>
+        </div>
+        <select class="chart-type-selector" onchange="changeChartType('categoryChart', this.value)">
+            <option value="doughnut">🍩 Doughnut</option>
+            <option value="pie">🥧 Pie</option>
+            <option value="bar">📊 Bar</option>
+            <option value="polarArea">⭕ Polar</option>
+        </select>
+    </div>
+    <canvas id="categoryChart"></canvas>
+</div>
+  <!-- PROFIT TREND -->
+<div class="chart-card wide">
+    <div class="chart-header">
+        <div>
+            <h3>Sales vs Profit</h3>
+            <span>Monthly comparison</span>
+        </div>
+        <select class="chart-type-selector" onchange="changeChartType('profitTrendChart', this.value)">
+            <option value="line">📈 Line</option>
+            <option value="bar">📊 Bar</option>
+            <option value="area">📉 Area</option>
+        </select>
+    </div>
+    <canvas id="profitTrendChart"></canvas>
+</div>
+
+
+<!-- ORDER TYPE -->
+<div class="chart-card">
+    <div class="chart-header">
+        <div>
+            <h3>Order Type Distribution</h3>
+            <span>By revenue</span>
+        </div>
+        <select class="chart-type-selector" onchange="changeChartType('orderTypeChart', this.value)">
+            <option value="doughnut">🍩 Doughnut</option>
+            <option value="pie">🥧 Pie</option>
+            <option value="bar">📊 Bar</option>
+            <option value="polarArea">⭕ Polar</option>
+        </select>
+    </div>
+    <canvas id="orderTypeChart"></canvas>
+</div>
+
+<!-- STATE PERFORMANCE -->
+<div class="chart-card">
+    <div class="chart-header">
+        <div>
+            <h3>State Performance</h3>
+            <span>Sales by state</span>
+        </div>
+        <select class="chart-type-selector" onchange="changeChartType('stateChart', this.value)">
+            <option value="horizontalBar">📋 H-Bar</option>
+            <option value="bar">📊 Bar</option>
+            <option value="pie">🥧 Pie</option>
+            <option value="doughnut">🍩 Doughnut</option>
+        </select>
+    </div>
+    <canvas id="stateChart"></canvas>
+</div>
+
+
+<!-- TOP CUSTOMERS -->
+<div class="chart-card wide">
+    <div class="chart-header">
+        <div>
+            <h3>Top Customers</h3>
+            <span>Highest revenue customers</span>
+        </div>
+        <select class="chart-type-selector" onchange="changeChartType('customerChart', this.value)">
+            <option value="horizontalBar">📋 H-Bar</option>
+            <option value="bar">📊 Bar</option>
+            <option value="pie">🥧 Pie</option>
+            <option value="doughnut">🍩 Doughnut</option>
+            <option value="polarArea">⭕ Polar</option>
+        </select>
+    </div>
+    <canvas id="customerChart"></canvas>
+</div>
+    <!-- ===============================================
+         DETECTED DATA MODEL
+    ================================================= -->
+
+    <div
+        id="dashboardDataModel"
+        class="analysis-grid"
+    ></div>
+<!-- PROFIT TREND CHART -->
+<div class="chart-card wide">
+    <div class="chart-header">
+        <div>
+            <h3>Sales vs Profit</h3>
+            <span>Monthly revenue and profitability</span>
+        </div>
+    </div>
+    <canvas id="profitTrendChart"></canvas>
+</div>
+
+<!-- ORDER TYPE -->
+<div class="chart-card">
+    <div class="chart-header">
+        <div>
+            <h3>Order Type Distribution</h3>
+            <span>By revenue</span>
+        </div>
+    </div>
+    <canvas id="orderTypeChart"></canvas>
+</div>
+
+<!-- STATE PERFORMANCE -->
+<div class="chart-card">
+    <div class="chart-header">
+        <div>
+            <h3>State Performance</h3>
+            <span>Sales by state</span>
+        </div>
+    </div>
+    <canvas id="stateChart"></canvas>
+</div>
+
+<!-- TOP CUSTOMERS -->
+<div class="chart-card wide">
+    <div class="chart-header">
+        <div>
+            <h3>Top Customers</h3>
+            <span>Highest revenue customers</span>
+        </div>
+    </div>
+    <canvas id="customerChart"></canvas>
+</div>
+<!-- =====================================================
+     KEY BUSINESS INSIGHTS
+====================================================== -->
+
+<div
+    id="insightsPanel"
+    class="preview-section"
+    style="margin-top:25px;"
+>
+
+    <div class="preview-header">
+
+        <div>
+
+            <h2>
+                💡 Key Business Insights
+            </h2>
+
+            <span>
+                Automatically generated from your data
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="dashboardInsights"
+        class="analysis-grid"
+    >
+
+        <div class="analysis-card">
+
+            <h3>
+                📊 Analysis
+            </h3>
+
+            <p>
+                Dashboard insights will appear here.
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+</section>
+
+
+    
+
+    </main>
+
+
+    <footer>
+
+        DATAVISION BI
+        © 2026
+
+    </footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+        src="{{ url_for('static', filename='js/dashboard.js') }}"
+    ></script>
+     <!-- ==========================================================
+     PHASE 5 - POWER QUERY EDITOR
+========================================================== -->
+
+<section
+    id="querySection"
+    class="query-section hidden"
+>
+
+    <!-- HEADER -->
+
+    <div class="query-header">
+
+        <div>
+
+            <h2>
+                ⚡ Power Query Editor
+            </h2>
+
+            <p>
+                Transform and clean your data
+                before building the dashboard.
+            </p>
+
+        </div>
+
+        <div class="query-header-actions">
+
+            <button
+                type="button"
+                onclick="startQuery()"
+                class="query-btn primary"
+            >
+                🔄 Load Query
+            </button>
+
+            <button
+                type="button"
+                onclick="resetQuery()"
+                class="query-btn danger"
+            >
+                ↩ Reset
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- QUERY WORKSPACE -->
+
+    <div class="query-workspace">
+
+
+        <!-- ================================================
+             LEFT SIDEBAR
+        ================================================= -->
+
+        <aside class="query-sidebar">
+
+            <div class="query-panel">
+
+                <h3>
+                    📋 Query Operations
+                </h3>
+
+
+                <button
+                    type="button"
+                    onclick="queryRemoveEmptyRows()"
+                    class="query-operation"
+                >
+                    🧹 Remove Empty Rows
+                </button>
+
+
+                <button
+                    type="button"
+                    onclick="queryRemoveDuplicates()"
+                    class="query-operation"
+                >
+                    ♻ Remove Duplicates
+                </button>
+
+
+                <button
+                    type="button"
+                    onclick="openRemoveColumns()"
+                    class="query-operation"
+                >
+                    🗑 Remove Columns
+                </button>
+
+
+                <button
+                    type="button"
+                    onclick="openRenameColumn()"
+                    class="query-operation"
+                >
+                    ✏ Rename Column
+                </button>
+
+
+                <button
+                    type="button"
+                    onclick="refreshQueryPreview()"
+                    class="query-operation"
+                >
+                    🔄 Refresh Preview
+                </button>
+
+            </div>
+
+
+            <!-- COLUMNS -->
+
+            <div class="query-panel">
+
+                <h3>
+                    📊 Columns
+                </h3>
+
+                <div
+                    id="queryColumns"
+                    class="query-columns"
+                >
+
+                    <span>
+                        Load a file first
+                    </span>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- ================================================
+             MAIN QUERY AREA
+        ================================================= -->
+
+        <main class="query-main">
+
+
+            <!-- TOOLBAR -->
+
+            <div class="query-toolbar">
+
+                <div>
+
+                    <strong>
+                        Data Preview
+                    </strong>
+
+                    <span
+                        id="queryRowCount"
+                    >
+                        0 rows
+                    </span>
+
+                </div>
+
+
+                <div>
+
+                    <button
+                        type="button"
+                        onclick="refreshQueryPreview()"
+                        class="query-btn"
+                    >
+                        🔄 Preview
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- TABLE -->
+
+            <div
+                id="queryTable"
+                class="query-table-container"
+            >
+
+                <div class="query-empty">
+
+                    <div>
+                        📊
+                    </div>
+
+                    <h3>
+                        No data loaded
+                    </h3>
+
+                    <p>
+                        Upload a CSV or Excel file
+                        and load it into Query Editor.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- ============================================
+                 APPLIED STEPS
+            ============================================= -->
+
+            <div class="applied-steps">
+
+                <div class="applied-steps-header">
+
+                    <div>
+
+                        <h3>
+                            Applied Steps
+                        </h3>
+
+                        <span>
+                            Query transformation history
+                        </span>
+
+                    </div>
+
+                    <span
+                        id="queryStepCount"
+                        class="step-count"
+                    >
+                        0 steps
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="querySteps"
+                    class="query-steps"
+                >
+
+                    <div class="query-step active">
+
+                        <span>
+                            1
+                        </span>
+
+                        <strong>
+                            Source
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+</section>
+
+
+<!-- ==========================================================
+     REMOVE COLUMNS MODAL
+========================================================== -->
+
+<div
+    id="removeColumnsModal"
+    class="query-modal hidden"
+>
+
+    <div class="query-modal-box">
+
+        <div class="query-modal-header">
+
+            <h3>
+                🗑 Remove Columns
+            </h3>
+
+            <button
+                type="button"
+                onclick="closeRemoveColumns()"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <p>
+            Select the columns you want to remove.
+        </p>
+
+
+        <div
+            id="removeColumnsList"
+            class="remove-columns-list"
+        ></div>
+
+
+        <div class="query-modal-actions">
+
+            <button
+                type="button"
+                onclick="closeRemoveColumns()"
+                class="query-btn"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                onclick="confirmRemoveColumns()"
+                class="query-btn danger"
+            >
+                Remove Selected
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================================
+     RENAME COLUMN MODAL
+========================================================== -->
+
+<div
+    id="renameColumnModal"
+    class="query-modal hidden"
+>
+
+    <div class="query-modal-box">
+
+        <div class="query-modal-header">
+
+            <h3>
+                ✏ Rename Column
+            </h3>
+
+            <button
+                type="button"
+                onclick="closeRenameColumn()"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <label>
+            Select Column
+        </label>
+
+
+        <select
+            id="renameColumnSelect"
+            class="query-input"
+        >
+
+            <option value="">
+                Select Column
+            </option>
+
+        </select>
+
+
+        <label>
+            New Column Name
+        </label>
+
+
+        <input
+            type="text"
+            id="newColumnName"
+            class="query-input"
+            placeholder="Enter new column name"
+        >
+
+
+        <div class="query-modal-actions">
+
+            <button
+                type="button"
+                onclick="closeRenameColumn()"
+                class="query-btn"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                onclick="confirmRenameColumn()"
+                class="query-btn primary"
+            >
+                Rename
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</body>
+
+</html>
+

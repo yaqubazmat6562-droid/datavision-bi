@@ -1,0 +1,17 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+instance/
+uploads/
+cleaned/
+logs/
+*.db
+*.log
+.vscode/
+.idea/
+.DS_Store
+*.xlsx
+*.xls
+*.csv
