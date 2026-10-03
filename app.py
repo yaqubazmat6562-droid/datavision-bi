@@ -217,8 +217,11 @@ def create_app(config_class=Config):
 # ==========================================================
 # ENTRYPOINT
 # ==========================================================
+
+# Create global app for gunicorn (Render, Heroku, etc.)
+app = create_app()
+
 if __name__ == "__main__":
-    app = create_app()
     app.run(
         debug=app.config["DEBUG"],
         host="0.0.0.0" if app.config["ENVIRONMENT"] == "production" else "127.0.0.1",
