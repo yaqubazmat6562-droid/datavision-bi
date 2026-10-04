@@ -77,8 +77,43 @@ def verify_file_content(filepath):
         allowed_exts = {".xlsx", ".xls", ".csv"}
         return ext in allowed_exts, f"fallback:{ext}"
 
+# ==========================================================
+# SECURE FILE SAVE
+# ==========================================================
+def safe_save_upload(file, upload_folder):
+    """
+    Safely save an uploaded file with extension check.
+    Content verification is optional (fallback to extension).
+    """
+    if not file or not file.filename:
+        return False, "No file provided", None
 
+    if not is_safe_filename(file.filename):
+        return False, "Invalid filename", None
 
+    filename = secure_filename(file.filename)
+
+    if not filename:
+        return False, "Could not secure filename", None
+
+    # Only allow known extensions
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in {".xlsx", ".xls", ".csv"}:
+        return False, f"Invalid file extension: {ext}. Only .xlsx, .xls, .csv allowed.", None
+
+    os.makedirs(upload_folder, exist_ok=True)
+    filepath = os.path.join(upload_folder, filename)
+    file.save(filepath)
+
+    # Light content check (optional — never blocks)
+    try:
+        is_valid, mime = verify_file_content(filepath)
+        if not is_valid:
+            print(f"[WARN] File content check failed ({mime}) for {filename}, allowing anyway")
+    except Exception as e:
+        print(f"[WARN] Content check error: {e}")
+
+    return True, filepath, filename
 # ==========================================================
 # INPUT SANITIZATION
 # ==========================================================
