@@ -1,17 +1,31 @@
-venv/
+# Python
 __pycache__/
-*.pyc
-*.pyo
-.env
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+env/
+
+# Flask
 instance/
 uploads/
 cleaned/
+flask_session/
 logs/
 *.db
-*.log
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Environment
+.env
+
+# IDE
 .vscode/
 .idea/
+
+# OS
 .DS_Store
-*.xlsx
-*.xls
-*.csv
+Thumbs.db
