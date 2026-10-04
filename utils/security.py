@@ -1,43 +1,32 @@
 # utils/security.py
 # Security utilities for DATAVISION BI
+# Simplified version — NO python-magic dependency
+# Works reliably on Render, Heroku, PythonAnywhere, and local
 
 import os
 import re
-
-try:
-    import magic
-    MAGIC_AVAILABLE = True
-except ImportError:
-    MAGIC_AVAILABLE = False
-    print("[WARN] python-magic not available, using extension-based verification")
-
 from werkzeug.utils import secure_filename
-# ==========================================================
-# ALLOWED MIME TYPES (for content verification)
-# ==========================================================
-ALLOWED_MIME_TYPES = {
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
-    "application/vnd.ms-excel",  # .xls
-    "text/csv",
-    "text/plain",  # some CSVs are detected as plain text
-    "application/csv",
-    "application/octet-stream",  # fallback
-}
 
 
 # ==========================================================
-# FILE EXTENSION VALIDATION
+# ALLOWED EXTENSIONS
+# ==========================================================
+ALLOWED_EXTENSIONS = {".xlsx", ".xls", ".csv"}
+
+
+# ==========================================================
+# FILENAME VALIDATION
 # ==========================================================
 def is_safe_filename(filename):
-    """Check if filename is safe (no path traversal, etc.)."""
+    """Check if filename is safe (no path traversal, special chars)."""
     if not filename or not isinstance(filename, str):
         return False
 
-    # Remove any path components
+    # No path traversal
     if "/" in filename or "\\" in filename or ".." in filename:
         return False
 
-    # Only allow alphanumeric, spaces, dashes, underscores, dots
+    # Only alphanumeric, spaces, dashes, underscores, dots
     if not re.match(r"^[\w\s\-\.]+$", filename):
         return False
 
@@ -49,71 +38,65 @@ def is_safe_filename(filename):
 
 
 # ==========================================================
-# DEEP FILE CONTENT VERIFICATION
+# FILE CONTENT VERIFICATION (extension only)
 # ==========================================================
 def verify_file_content(filepath):
     """
-    Verify actual file content matches expected type.
-    Falls back to extension check if python-magic unavailable.
+    Simple file content check based on extension.
+    Never uses python-magic (which fails on some platforms).
+    Returns (is_valid, detected_info).
     """
-    # Fallback: extension check if magic unavailable
-    if not MAGIC_AVAILABLE:
-        ext = os.path.splitext(filepath)[1].lower()
-        allowed_exts = {".xlsx", ".xls", ".csv"}
-        return ext in allowed_exts, f"extension:{ext}"
+    ext = os.path.splitext(filepath)[1].lower()
+    return ext in ALLOWED_EXTENSIONS, f"extension:{ext}"
 
-    try:
-        mime = magic.from_file(filepath, mime=True)
-        is_valid = mime in ALLOWED_MIME_TYPES
-
-        if not is_valid and mime.startswith("text/"):
-            is_valid = True
-
-        return is_valid, mime
-    except Exception as e:
-        print("File verification error:", e)
-        # Fallback to extension check
-        ext = os.path.splitext(filepath)[1].lower()
-        allowed_exts = {".xlsx", ".xls", ".csv"}
-        return ext in allowed_exts, f"fallback:{ext}"
 
 # ==========================================================
 # SECURE FILE SAVE
 # ==========================================================
 def safe_save_upload(file, upload_folder):
     """
-    Safely save an uploaded file with extension check.
-    Content verification is optional (fallback to extension).
+    Safely save an uploaded file with extension check only.
+    Returns (success, filepath_or_error, filename).
     """
+    # 1. Check filename exists
     if not file or not file.filename:
         return False, "No file provided", None
 
+    # 2. Validate filename
     if not is_safe_filename(file.filename):
         return False, "Invalid filename", None
 
+    # 3. Secure the filename
     filename = secure_filename(file.filename)
-
     if not filename:
         return False, "Could not secure filename", None
 
-    # Only allow known extensions
+    # 4. Check extension
     ext = os.path.splitext(filename)[1].lower()
-    if ext not in {".xlsx", ".xls", ".csv"}:
+    if ext not in ALLOWED_EXTENSIONS:
         return False, f"Invalid file extension: {ext}. Only .xlsx, .xls, .csv allowed.", None
 
+    # 5. Ensure upload folder exists
     os.makedirs(upload_folder, exist_ok=True)
+
+    # 6. Save file
     filepath = os.path.join(upload_folder, filename)
     file.save(filepath)
 
-    # Light content check (optional — never blocks)
-    try:
-        is_valid, mime = verify_file_content(filepath)
-        if not is_valid:
-            print(f"[WARN] File content check failed ({mime}) for {filename}, allowing anyway")
-    except Exception as e:
-        print(f"[WARN] Content check error: {e}")
+    # 7. Verify file exists and is not empty
+    if not os.path.exists(filepath):
+        return False, "File save failed", None
+
+    if os.path.getsize(filepath) == 0:
+        try:
+            os.remove(filepath)
+        except Exception:
+            pass
+        return False, "File is empty", None
 
     return True, filepath, filename
+
+
 # ==========================================================
 # INPUT SANITIZATION
 # ==========================================================
