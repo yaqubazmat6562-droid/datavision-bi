@@ -37,7 +37,16 @@ class Config:
     # ========================================
     # DATABASE
     # ========================================
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///instance/datavision.db")
+    # Fix Render's postgres:// URL format
+    database_url = os.getenv("DATABASE_URL", "")
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    # Also handle postgresql:// with psycopg3 driver
+    if database_url.startswith("postgresql://") and "psycopg2" not in database_url and "psycopg" not in database_url:
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    SQLALCHEMY_DATABASE_URI = database_url or "sqlite:///instance/datavision.db"
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
