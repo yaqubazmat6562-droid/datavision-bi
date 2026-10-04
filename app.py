@@ -112,16 +112,28 @@ def create_app(config_class=Config):
     # ========================================
     setup_logging(app)
 
-    # ========================================
+       # ========================================
     # DATABASE INITIALIZATION
     # ========================================
     db.init_app(app)
 
-    # Create all tables (users, files, dashboards, query_sessions)
     with app.app_context():
-        db.create_all()
-        app.logger.info("Database initialized")
+        try:
+            # Ensure instance folder exists
+            db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+            if db_uri.startswith("sqlite:///"):
+                db_path = db_uri.replace("sqlite:///", "")
+                db_dir = os.path.dirname(db_path)
+                if db_dir:
+                    os.makedirs(db_dir, exist_ok=True)
 
+            db.create_all()
+            app.logger.info(f"Database initialized at: {db_uri}")
+        except Exception as e:
+            app.logger.error(f"Database initialization failed: {e}")
+            import traceback
+            app.logger.error(traceback.format_exc())
+            raise
     # ========================================
     # LOGIN MANAGER
     # ========================================

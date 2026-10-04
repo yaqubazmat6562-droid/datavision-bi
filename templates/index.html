@@ -47,13 +47,20 @@
         </div>
 
 
-        <div class="header-status">
+        <div class="header-actions-auth">
+    <!-- Agar user logged in hai toh yeh dikhega -->
+    <div id="userInfo" class="user-info hidden">
+        <span class="status-dot"></span>
+        <span id="userName">User</span>
+        <button onclick="AuthModule.logout()" class="auth-btn-small">Logout</button>
+    </div>
 
-            <span class="status-dot"></span>
-
-            YAQUB "BI"
-
-        </div>
+    <!-- Agar user logged in nahi hai toh yeh dikhega -->
+    <div id="authButtons" class="auth-buttons">
+        <a href="/login" class="auth-btn-outline">Login</a>
+        <a href="/signup" class="auth-btn-primary">Sign Up</a>
+    </div>
+</div>
 
     </header>
 

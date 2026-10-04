@@ -2077,3 +2077,33 @@
     window.changeCurrency = changeCurrency;
     window.buildDynamicFilters = buildDynamicFilters;
 })();
+// ==========================================================
+// AUTH STATE CHECK (Header Buttons)
+// ==========================================================
+document.addEventListener("DOMContentLoaded", function() {
+    checkAuthState();
+});
+
+async function checkAuthState() {
+    try {
+        var response = await fetch("/api/auth/me");
+        var data = await response.json();
+
+        var authButtons = document.getElementById("authButtons");
+        var userInfo = document.getElementById("userInfo");
+        var userName = document.getElementById("userName");
+
+        if (data.authenticated && data.user) {
+            // User logged in
+            if (authButtons) authButtons.classList.add("hidden");
+            if (userInfo) userInfo.classList.remove("hidden");
+            if (userName) userName.textContent = data.user.full_name || "User";
+        } else {
+            // User not logged in
+            if (authButtons) authButtons.classList.remove("hidden");
+            if (userInfo) userInfo.classList.add("hidden");
+        }
+    } catch (error) {
+        console.log("Auth check skipped:", error.message);
+    }
+}

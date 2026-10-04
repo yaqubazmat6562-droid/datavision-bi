@@ -2048,4 +2048,82 @@ footer {
 .currency-selector:focus {
     border-color: #00b4d8;
     box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
+}/* =========================================
+   HEADER AUTH BUTTONS (Login/Signup)
+========================================= */
+
+.header-actions-auth {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auth-btn-outline {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.2s ease;
+}
+
+.auth-btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #00b4d8;
+    color: #00b4d8;
+}
+
+.auth-btn-primary {
+    background: #00b4d8;
+    color: #0b1f3a;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 20px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.auth-btn-primary:hover {
+    background: #0096c7;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
+}
+
+/* User Info (when logged in) */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.auth-btn-small {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.auth-btn-small:hover {
+    background: #b91c1c;
+}
+
+.hidden {
+    display: none !important;
 }
