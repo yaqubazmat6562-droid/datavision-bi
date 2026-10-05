@@ -676,14 +676,24 @@
 </div>
 
 
-    <!-- ===============================================
-         KPI CARDS
-    ================================================= -->
+   <!-- ===============================================
+     KPI CARDS (Customizable)
+================================================= -->
 
-    <div
-        id="dashboardKPIs"
-        class="stats-grid"
-    ></div>
+<div class="kpi-section-header">
+    <div>
+        <h3>📊 Key Performance Indicators</h3>
+        <span>Click ✏️ to customize any KPI card</span>
+    </div>
+    <button class="kpi-reset-btn" onclick="resetKPICustomization()">
+        ↻ Reset KPIs
+    </button>
+</div>
+
+<div
+    id="dashboardKPIs"
+    class="stats-grid"
+></div>
 
 
     <!-- ===============================================
@@ -1382,6 +1392,83 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- ==========================================================
+     KPI CUSTOMIZATION MODAL
+========================================================== -->
+<div id="kpiCustomizeModal" class="kpi-modal hidden">
+    <div class="kpi-modal-box">
+        <div class="kpi-modal-header">
+            <h3>✏️ Customize KPI Card</h3>
+            <button type="button" onclick="closeKPIModal()">×</button>
+        </div>
+
+        <div class="kpi-modal-body">
+            <div class="kpi-form-group">
+                <label>Title</label>
+                <input type="text" id="kpiEditTitle" class="kpi-input" placeholder="e.g. Total Sales">
+            </div>
+
+            <div class="kpi-form-group">
+                <label>Icon (Emoji)</label>
+                <input type="text" id="kpiEditIcon" class="kpi-input" placeholder="e.g. 💰" maxlength="4">
+                <div class="kpi-emoji-picker">
+                    <span onclick="pickEmoji('💰')">💰</span>
+                    <span onclick="pickEmoji('📈')">📈</span>
+                    <span onclick="pickEmoji('📊')">📊</span>
+                    <span onclick="pickEmoji('💳')">💳</span>
+                    <span onclick="pickEmoji('🎯')">🎯</span>
+                    <span onclick="pickEmoji('🧾')">🧾</span>
+                    <span onclick="pickEmoji('📦')">📦</span>
+                    <span onclick="pickEmoji('🛒')">🛒</span>
+                    <span onclick="pickEmoji('👥')">👥</span>
+                    <span onclick="pickEmoji('🏆')">🏆</span>
+                    <span onclick="pickEmoji('⚡')">⚡</span>
+                    <span onclick="pickEmoji('🔥')">🔥</span>
+                    <span onclick="pickEmoji('💎')">💎</span>
+                    <span onclick="pickEmoji('🌟')">🌟</span>
+                    <span onclick="pickEmoji('🚀')">🚀</span>
+                    <span onclick="pickEmoji('💡')">💡</span>
+                </div>
+            </div>
+
+            <div class="kpi-form-group">
+                <label>Color Theme</label>
+                <div class="kpi-color-picker">
+                    <span class="kpi-color-dot" data-color="#00b4d8" style="background:#00b4d8" onclick="pickColor('#00b4d8')"></span>
+                    <span class="kpi-color-dot" data-color="#0b1f3a" style="background:#0b1f3a" onclick="pickColor('#0b1f3a')"></span>
+                    <span class="kpi-color-dot" data-color="#16a34a" style="background:#16a34a" onclick="pickColor('#16a34a')"></span>
+                    <span class="kpi-color-dot" data-color="#f59e0b" style="background:#f59e0b" onclick="pickColor('#f59e0b')"></span>
+                    <span class="kpi-color-dot" data-color="#dc2626" style="background:#dc2626" onclick="pickColor('#dc2626')"></span>
+                    <span class="kpi-color-dot" data-color="#8b5cf6" style="background:#8b5cf6" onclick="pickColor('#8b5cf6')"></span>
+                    <span class="kpi-color-dot" data-color="#06b6d4" style="background:#06b6d4" onclick="pickColor('#06b6d4')"></span>
+                    <span class="kpi-color-dot" data-color="#ec4899" style="background:#ec4899" onclick="pickColor('#ec4899')"></span>
+                    <span class="kpi-color-dot" data-color="#f97316" style="background:#f97316" onclick="pickColor('#f97316')"></span>
+                    <span class="kpi-color-dot" data-color="#84cc16" style="background:#84cc16" onclick="pickColor('#84cc16')"></span>
+                </div>
+                <input type="color" id="kpiEditColor" class="kpi-color-input" value="#00b4d8">
+            </div>
+
+            <div class="kpi-form-group kpi-toggle-group">
+                <label>
+                    <input type="checkbox" id="kpiEditVisible" checked>
+                    <span>Show this KPI card</span>
+                </label>
+            </div>
+
+            <div class="kpi-form-group kpi-toggle-group">
+                <label>
+                    <input type="checkbox" id="kpiEditHighlight">
+                    <span>Highlight (larger card)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="kpi-modal-actions">
+            <button type="button" onclick="closeKPIModal()" class="kpi-btn">Cancel</button>
+            <button type="button" onclick="saveKPICustomization()" class="kpi-btn primary">Save Changes</button>
+        </div>
+    </div>
+</div>
 </body>
 
 </html>

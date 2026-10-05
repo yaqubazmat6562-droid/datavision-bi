@@ -1088,35 +1088,82 @@ var CHART_COLORS = [
     generateDashboardInsights(data);
 }
     function renderDashboardKPIs(kpis) {
-        var container = document.getElementById("dashboardKPIs");
-        if (!container) return;
-        container.innerHTML = "";
+    var container = document.getElementById("dashboardKPIs");
+    if (!container) return;
+    container.innerHTML = "";
 
-        if (!kpis) {
-            container.innerHTML = "<p>No KPI data available.</p>";
-            return;
+    if (!kpis) {
+        container.innerHTML = "<p>No KPI data available.</p>";
+        return;
+    }
+
+    // Load customization
+    if (!kpiCustomization.length) loadKPICustomization();
+
+    // Calculate values from kpis
+    var totalSales = Number(kpis.total_sales || 0);
+    var totalCost = Number(kpis.total_cost || 0);
+    var profit = Number(kpis.profit !== undefined ? kpis.profit : (totalSales - totalCost));
+    var profitMargin = Number(kpis.profit_margin !== undefined ? kpis.profit_margin : (totalSales !== 0 ? (profit / totalSales) * 100 : 0));
+    var totalOrders = Number(kpis.total_orders || 0);
+    var totalUnits = Number(kpis.total_units || 0);
+    var aov = Number(kpis.average_order_value !== undefined ? kpis.average_order_value : (totalOrders !== 0 ? totalSales / totalOrders : 0));
+    var uniqueCustomers = Number(kpis.unique_customers || 0);
+
+    var kpiValues = [
+        formatCurrency(totalSales),
+        formatCurrency(totalCost),
+        formatCurrency(profit),
+        formatPercent(profitMargin),
+        formatNumber(totalOrders),
+        formatNumber(totalUnits),
+        formatCurrency(aov),
+        formatNumber(uniqueCustomers)
+    ];
+
+    // Render each KPI card (in saved order)
+    kpiCustomization.forEach(function(config, index) {
+        if (!config.visible) return;
+
+        var card = document.createElement("div");
+        card.className = "stat-card dashboard-kpi advanced-kpi-card";
+
+        if (config.highlighted) {
+            card.classList.add("kpi-highlighted");
         }
 
-        var cards = [
-            { title: "Total Sales", value: formatCurrency(kpis.total_sales) },
-            { title: "Total Cost", value: formatCurrency(kpis.total_cost) },
-            { title: "Gross Profit", value: formatCurrency(kpis.profit) },
-            { title: "Profit Margin", value: formatPercent(kpis.profit_margin) },
-            { title: "Total Orders", value: formatNumber(kpis.total_orders) },
-            { title: "Units Sold", value: formatNumber(kpis.total_units) },
-            { title: "Avg Order Value", value: formatCurrency(kpis.average_order_value) },
-            { title: "Unique Customers", value: formatNumber(kpis.unique_customers) }
-        ];
+        card.style.borderLeftColor = config.color;
+        card.style.borderLeftWidth = "5px";
 
-        cards.forEach(function(card) {
-            var element = document.createElement("div");
-            element.className = "stat-card dashboard-kpi";
-            element.innerHTML =
-                '<div class="kpi-title">' + card.title + '</div>' +
-                '<div class="kpi-value">' + card.value + '</div>';
-            container.appendChild(element);
-        });
+        card.innerHTML =
+            '<button class="kpi-edit-btn" onclick="openKPIModal(' + index + ')" title="Customize">✏️</button>' +
+            '<div class="kpi-top">' +
+                '<div class="kpi-icon" style="background:' + hexToRgba(config.color, 0.15) + ';color:' + config.color + ';">' + config.icon + '</div>' +
+                '<span class="kpi-status" style="background:' + hexToRgba(config.color, 0.15) + ';color:' + config.color + ';">Live</span>' +
+            '</div>' +
+            '<div class="kpi-title">' + escapeHtml(config.title) + '</div>' +
+            '<div class="kpi-value">' + kpiValues[index] + '</div>';
+
+        container.appendChild(card);
+    });
+
+    if (container.children.length === 0) {
+        container.innerHTML = '<div class="filter-item" style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:20px;">All KPI cards are hidden. Click "Reset KPIs" to restore.</div>';
     }
+}
+
+// Helper: Convert hex to rgba
+function hexToRgba(hex, alpha) {
+    if (!hex) return "rgba(0,180,216," + alpha + ")";
+    var h = hex.replace("#", "");
+    if (h.length === 3) {
+        h = h.split("").map(function(c) { return c + c; }).join("");
+    }
+    var r = parseInt(h.substring(0, 2), 16);
+    var g = parseInt(h.substring(2, 4), 16);
+    var b = parseInt(h.substring(4, 6), 16);
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+}
 
     function renderDataModel(data) {
         var container = document.getElementById("dashboardDataModel");
@@ -2187,12 +2234,164 @@ var CHART_COLORS = [
     window.exportToPDF = exportToPDF;
     window.changeCurrency = changeCurrency;
     window.buildDynamicFilters = buildDynamicFilters;
+    // Phase 2 - KPI Customization
+window.openKPIModal = openKPIModal;
+window.closeKPIModal = closeKPIModal;
+window.saveKPICustomization = saveKPICustomization;
+window.resetKPICustomization = resetKPICustomization;
+window.pickEmoji = pickEmoji;
+window.pickColor = pickColor;
+// ==========================================================
+// PHASE 2 - KPI CUSTOMIZATION ENGINE
+// ==========================================================
+
+var KPI_STORAGE_KEY = "datavision_kpi_customization";
+
+// Default KPI definitions (index-based mapping)
+var DEFAULT_KPI_CONFIG = [
+    { id: "kpi_0", title: "Total Sales",        icon: "💰", color: "#00b4d8", visible: true, highlighted: false },
+    { id: "kpi_1", title: "Total Cost",         icon: "💳", color: "#0b1f3a", visible: true, highlighted: false },
+    { id: "kpi_2", title: "Gross Profit",       icon: "📈", color: "#16a34a", visible: true, highlighted: false },
+    { id: "kpi_3", title: "Profit Margin",      icon: "🎯", color: "#f59e0b", visible: true, highlighted: false },
+    { id: "kpi_4", title: "Total Orders",       icon: "🧾", color: "#8b5cf6", visible: true, highlighted: false },
+    { id: "kpi_5", title: "Units Sold",         icon: "📦", color: "#06b6d4", visible: true, highlighted: false },
+    { id: "kpi_6", title: "Average Order Value", icon: "🛒", color: "#ec4899", visible: true, highlighted: false },
+    { id: "kpi_7", title: "Unique Customers",   icon: "👥", color: "#f97316", visible: true, highlighted: false }
+];
+
+var kpiCustomization = [];
+var currentEditingKpiIndex = null;
+
+// Load saved customization from localStorage
+function loadKPICustomization() {
+    try {
+        var saved = localStorage.getItem(KPI_STORAGE_KEY);
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length === DEFAULT_KPI_CONFIG.length) {
+                kpiCustomization = parsed;
+                return;
+            }
+        }
+    } catch (e) {
+        console.error("Load KPI custom error:", e);
+    }
+    // Fallback to defaults
+    kpiCustomization = JSON.parse(JSON.stringify(DEFAULT_KPI_CONFIG));
+}
+
+// Save customization to localStorage
+function saveKPICustomizationToStorage() {
+    try {
+        localStorage.setItem(KPI_STORAGE_KEY, JSON.stringify(kpiCustomization));
+    } catch (e) {
+        console.error("Save KPI custom error:", e);
+    }
+}
+
+// Reset all KPI customizations
+function resetKPICustomization() {
+    if (!confirm("Reset all KPI customizations to default?")) return;
+    kpiCustomization = JSON.parse(JSON.stringify(DEFAULT_KPI_CONFIG));
+    saveKPICustomizationToStorage();
+    if (appState.dashboardData) {
+        renderDashboardKPIs(appState.dashboardData.kpis);
+    }
+    showMessage("✅ KPI customization reset!", "success");
+    setTimeout(function() {
+        var msg = document.getElementById("message");
+        if (msg) msg.classList.add("hidden");
+    }, 2000);
+}
+
+// Open KPI customize modal
+function openKPIModal(index) {
+    currentEditingKpiIndex = index;
+    var config = kpiCustomization[index];
+    if (!config) return;
+
+    document.getElementById("kpiEditTitle").value = config.title;
+    document.getElementById("kpiEditIcon").value = config.icon;
+    document.getElementById("kpiEditColor").value = config.color;
+    document.getElementById("kpiEditVisible").checked = config.visible !== false;
+    document.getElementById("kpiEditHighlight").checked = config.highlighted === true;
+
+    // Highlight selected color dot
+    document.querySelectorAll(".kpi-color-dot").forEach(function(dot) {
+        dot.classList.remove("selected");
+        if (dot.dataset.color.toLowerCase() === config.color.toLowerCase()) {
+            dot.classList.add("selected");
+        }
+    });
+
+    document.getElementById("kpiCustomizeModal").classList.remove("hidden");
+}
+
+// Close KPI modal
+function closeKPIModal() {
+    document.getElementById("kpiCustomizeModal").classList.add("hidden");
+    currentEditingKpiIndex = null;
+}
+
+// Pick emoji
+function pickEmoji(emoji) {
+    document.getElementById("kpiEditIcon").value = emoji;
+}
+
+// Pick color
+function pickColor(color) {
+    document.getElementById("kpiEditColor").value = color;
+    document.querySelectorAll(".kpi-color-dot").forEach(function(dot) {
+        dot.classList.remove("selected");
+        if (dot.dataset.color.toLowerCase() === color.toLowerCase()) {
+            dot.classList.add("selected");
+        }
+    });
+}
+
+// Save KPI customization
+function saveKPICustomization() {
+    if (currentEditingKpiIndex === null) return;
+
+    var title = document.getElementById("kpiEditTitle").value.trim();
+    var icon = document.getElementById("kpiEditIcon").value.trim() || "📊";
+    var color = document.getElementById("kpiEditColor").value;
+    var visible = document.getElementById("kpiEditVisible").checked;
+    var highlighted = document.getElementById("kpiEditHighlight").checked;
+
+    if (!title) {
+        alert("Please enter a title.");
+        return;
+    }
+
+    kpiCustomization[currentEditingKpiIndex] = {
+        id: "kpi_" + currentEditingKpiIndex,
+        title: title,
+        icon: icon,
+        color: color,
+        visible: visible,
+        highlighted: highlighted
+    };
+
+    saveKPICustomizationToStorage();
+    closeKPIModal();
+
+    if (appState.dashboardData) {
+        renderDashboardKPIs(appState.dashboardData.kpis);
+    }
+    showMessage("✅ KPI updated!", "success");
+    setTimeout(function() {
+        var msg = document.getElementById("message");
+        if (msg) msg.classList.add("hidden");
+    }, 2000);
+}
 })();
 // ==========================================================
 // AUTH STATE CHECK (Header Buttons)
 // ==========================================================
 document.addEventListener("DOMContentLoaded", function() {
     checkAuthState();
+    loadKPICustomization();
 });
 
 async function checkAuthState() {
