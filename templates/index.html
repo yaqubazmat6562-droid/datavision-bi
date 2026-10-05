@@ -584,7 +584,26 @@
         <button class="action-button" onclick="refreshDashboard()">
             🔄 Refresh
         </button>
-    
+        <!-- Save Layout Button -->
+<button class="action-button save-layout-btn" onclick="openSaveLayoutModal()">
+    💾 Save Layout
+</button>
+
+<!-- Load Layout Dropdown -->
+<div class="load-layout-dropdown">
+    <button class="action-button load-layout-btn" onclick="toggleLoadLayoutMenu(event)">
+        📂 My Layouts
+    </button>
+    <div class="load-layout-menu hidden" id="loadLayoutMenu">
+        <div class="load-layout-header">
+            <strong>Saved Layouts</strong>
+            <button onclick="loadLayoutsList()" title="Refresh">↻</button>
+        </div>
+        <div id="loadLayoutList" class="load-layout-list">
+            <div class="layout-empty">Loading...</div>
+        </div>
+    </div>
+</div>
     
 
         <div class="export-dropdown">
@@ -1557,6 +1576,51 @@
         <div class="kpi-modal-actions">
             <button type="button" onclick="closeKPIModal()" class="kpi-btn">Cancel</button>
             <button type="button" onclick="saveKPICustomization()" class="kpi-btn primary">Save Changes</button>
+        </div>
+    </div>
+</div>
+<!-- ==========================================================
+     SAVE LAYOUT MODAL
+========================================================== -->
+<div id="saveLayoutModal" class="layout-modal hidden">
+    <div class="layout-modal-box">
+        <div class="layout-modal-header">
+            <h3>💾 Save Dashboard Layout</h3>
+            <button type="button" onclick="closeSaveLayoutModal()">×</button>
+        </div>
+
+        <div class="layout-modal-body">
+            <div class="layout-form-group">
+                <label>Layout Name *</label>
+                <input type="text" id="layoutName" class="layout-input" placeholder="e.g. Sales View, CEO Report">
+            </div>
+
+            <div class="layout-form-group">
+                <label>Description (optional)</label>
+                <textarea id="layoutDescription" class="layout-input" rows="2" placeholder="What is this layout for?"></textarea>
+            </div>
+
+            <div class="layout-info-box">
+                <div class="layout-info-icon">💡</div>
+                <div>
+                    <strong>What will be saved:</strong>
+                    <ul>
+                        <li>KPI customization (title, icon, color, order)</li>
+                        <li>Chart layout (size, order, visibility)</li>
+                        <li>Chart type preferences</li>
+                        <li>Active filters</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="layoutSaveMessage" class="layout-message"></div>
+        </div>
+
+        <div class="layout-modal-actions">
+            <button type="button" onclick="closeSaveLayoutModal()" class="layout-btn">Cancel</button>
+            <button type="button" onclick="saveLayoutNow()" class="layout-btn primary" id="saveLayoutBtn">
+                Save Layout
+            </button>
         </div>
     </div>
 </div>

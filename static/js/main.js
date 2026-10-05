@@ -2266,6 +2266,15 @@ window.changeChartSize = changeChartSize;
 window.hideChart = hideChart;
 window.restoreChart = restoreChart;
 window.resetChartLayout = resetChartLayout;
+// Phase 4 - Save & Load Layouts
+window.openSaveLayoutModal = openSaveLayoutModal;
+window.closeSaveLayoutModal = closeSaveLayoutModal;
+window.saveLayoutNow = saveLayoutNow;
+window.toggleLoadLayoutMenu = toggleLoadLayoutMenu;
+window.loadLayoutsList = loadLayoutsList;
+window.loadLayout = loadLayout;
+window.deleteLayout = deleteLayout;
+window.setDefaultLayout = setDefaultLayout;
 // ==========================================================
 // PHASE 2 - KPI CUSTOMIZATION ENGINE
 // ==========================================================
@@ -2681,6 +2690,339 @@ document.addEventListener("DOMContentLoaded", function() {
     loadChartLayout();
     initializeDragAndDrop();
 });
+// ==========================================================
+// PHASE 4 - SAVE & LOAD LAYOUTS
+// ==========================================================
+
+// Open Save Layout Modal
+function openSaveLayoutModal() {
+    if (!appState.dashboardFilename) {
+        alert("Please upload a file and build a dashboard first.");
+        return;
+    }
+
+    document.getElementById("layoutName").value = "";
+    document.getElementById("layoutDescription").value = "";
+    document.getElementById("layoutSaveMessage").className = "layout-message";
+    document.getElementById("layoutSaveMessage").style.display = "none";
+
+    document.getElementById("saveLayoutModal").classList.remove("hidden");
+}
+
+// Close Save Layout Modal
+function closeSaveLayoutModal() {
+    document.getElementById("saveLayoutModal").classList.add("hidden");
+}
+
+// Save layout to server
+async function saveLayoutNow() {
+    var name = document.getElementById("layoutName").value.trim();
+    var description = document.getElementById("layoutDescription").value.trim();
+
+    if (!name) {
+        showLayoutMessage("Please enter a layout name.", "error");
+        return;
+    }
+
+    var btn = document.getElementById("saveLayoutBtn");
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    try {
+        // Collect all customization data
+        var kpiData = (typeof kpiCustomization !== "undefined") ? kpiCustomization : [];
+        var chartData = (typeof chartLayout !== "undefined") ? chartLayout : [];
+        var chartPrefs = (typeof chartTypePreferences !== "undefined") ? chartTypePreferences : {};
+
+        // Get active filters
+        var activeFilters = {};
+        try {
+            var filterIds = [
+                ["filterDateFrom", "date_from"],
+                ["filterDateTo", "date_to"],
+                ["filterProduct", "product"],
+                ["filterCategory", "category"],
+                ["filterState", "state"],
+                ["filterCity", "city"],
+                ["filterOrderType", "order_type"],
+                ["filterCustomer", "customer"]
+            ];
+            filterIds.forEach(function(pair) {
+                var el = document.getElementById(pair[0]);
+                if (el && el.value) activeFilters[pair[1]] = el.value;
+            });
+        } catch (e) {}
+
+        var payload = {
+            name: name,
+            description: description,
+            kpi_customization: kpiData,
+            chart_layout: chartData,
+            chart_preferences: chartPrefs,
+            filters: activeFilters
+        };
+
+        var response = await fetch("/dashboard/save-layout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        var data = await response.json();
+
+        if (!data.success) {
+            showLayoutMessage(data.message || "Save failed.", "error");
+            btn.disabled = false;
+            btn.textContent = "Save Layout";
+            return;
+        }
+
+        showLayoutMessage("✅ " + data.message, "success");
+
+        setTimeout(function() {
+            closeSaveLayoutModal();
+            loadLayoutsList();
+        }, 1200);
+
+    } catch (error) {
+        console.error("Save layout error:", error);
+        showLayoutMessage("Save failed: " + error.message, "error");
+        btn.disabled = false;
+        btn.textContent = "Save Layout";
+    }
+}
+
+// Helper: show layout message
+function showLayoutMessage(text, type) {
+    var msg = document.getElementById("layoutSaveMessage");
+    if (!msg) return;
+    msg.className = "layout-message " + type;
+    msg.textContent = text;
+    msg.style.display = "block";
+}
+
+// Toggle Load Layout Menu
+function toggleLoadLayoutMenu(event) {
+    if (event) event.stopPropagation();
+    var menu = document.getElementById("loadLayoutMenu");
+    if (!menu) return;
+
+    var isHidden = menu.classList.contains("hidden");
+    if (isHidden) {
+        menu.classList.remove("hidden");
+        loadLayoutsList();
+    } else {
+        menu.classList.add("hidden");
+    }
+}
+
+// Close menu on outside click
+document.addEventListener("click", function(e) {
+    var menu = document.getElementById("loadLayoutMenu");
+    if (!menu || menu.classList.contains("hidden")) return;
+
+    var dropdown = menu.closest(".load-layout-dropdown");
+    if (dropdown && !dropdown.contains(e.target)) {
+        menu.classList.add("hidden");
+    }
+});
+
+// Load list of saved layouts
+async function loadLayoutsList() {
+    var list = document.getElementById("loadLayoutList");
+    if (!list) return;
+
+    list.innerHTML = '<div class="layout-empty">Loading...</div>';
+
+    try {
+        var response = await fetch("/dashboard/layouts");
+        var data = await response.json();
+
+        if (!data.success) {
+            list.innerHTML = '<div class="layout-empty">Failed to load.</div>';
+            return;
+        }
+
+        if (!data.layouts || data.layouts.length === 0) {
+            list.innerHTML = '<div class="layout-empty">No saved layouts yet. Click "💾 Save Layout" to create one.</div>';
+            return;
+        }
+
+        list.innerHTML = "";
+
+        data.layouts.forEach(function(layout) {
+            var item = document.createElement("div");
+            item.className = "layout-item";
+
+            var date = layout.updated_at ? new Date(layout.updated_at).toLocaleDateString() : "";
+
+            item.innerHTML =
+                '<div class="layout-item-info" onclick="loadLayout(' + layout.id + ')">' +
+                    '<div class="layout-item-name">' +
+                        escapeHtml(layout.name) +
+                        (layout.is_default ? ' <span class="default-badge">DEFAULT</span>' : '') +
+                    '</div>' +
+                    (layout.description ? '<div class="layout-item-desc">' + escapeHtml(layout.description) + '</div>' : '') +
+                    '<div class="layout-item-date">' + date + '</div>' +
+                '</div>' +
+                '<div class="layout-item-actions">' +
+                    '<button class="star-btn' + (layout.is_default ? ' active' : '') + '" onclick="setDefaultLayout(' + layout.id + '); event.stopPropagation();" title="Set as default">⭐</button>' +
+                    '<button class="delete-btn" onclick="deleteLayout(' + layout.id + '); event.stopPropagation();" title="Delete">🗑️</button>' +
+                '</div>';
+
+            list.appendChild(item);
+        });
+
+    } catch (error) {
+        console.error("Load layouts list error:", error);
+        list.innerHTML = '<div class="layout-empty">Error: ' + error.message + '</div>';
+    }
+}
+
+// Load specific layout
+async function loadLayout(layoutId) {
+    try {
+        showLoading();
+
+        var response = await fetch("/dashboard/load-layout/" + layoutId);
+        var data = await response.json();
+
+        hideLoading();
+
+        if (!data.success) {
+            alert(data.message || "Failed to load layout.");
+            return;
+        }
+
+        var layout = data.layout;
+
+        // Restore KPI customization
+        if (layout.kpi_customization && Array.isArray(layout.kpi_customization)) {
+            kpiCustomization = layout.kpi_customization;
+            if (typeof saveKPICustomizationToStorage === "function") {
+                saveKPICustomizationToStorage();
+            }
+        }
+
+        // Restore chart layout
+        if (layout.chart_layout && Array.isArray(layout.chart_layout)) {
+            chartLayout = layout.chart_layout;
+            if (typeof saveChartLayout === "function") {
+                saveChartLayout();
+            }
+        }
+
+        // Restore chart type preferences
+        if (layout.chart_preferences && typeof layout.chart_preferences === "object") {
+            for (var key in layout.chart_preferences) {
+                if (chartTypePreferences.hasOwnProperty(key)) {
+                    chartTypePreferences[key] = layout.chart_preferences[key];
+
+                    // Update select dropdown
+                    var selector = document.getElementById(key + "Selector");
+                    if (selector) selector.value = layout.chart_preferences[key];
+                }
+            }
+        }
+
+        // Restore filters (optional)
+        if (layout.filters) {
+            var filterMap = {
+                date_from: "filterDateFrom",
+                date_to: "filterDateTo",
+                product: "filterProduct",
+                category: "filterCategory",
+                state: "filterState",
+                city: "filterCity",
+                order_type: "filterOrderType",
+                customer: "filterCustomer"
+            };
+            for (var filterKey in layout.filters) {
+                var elId = filterMap[filterKey];
+                if (elId) {
+                    var el = document.getElementById(elId);
+                    if (el) el.value = layout.filters[filterKey];
+                }
+            }
+        }
+
+        // Re-render everything
+        if (appState.dashboardData) {
+            renderDashboardKPIs(appState.dashboardData.kpis);
+            renderDashboard(appState.dashboardData);
+        }
+
+        // Apply layout
+        setTimeout(function() {
+            if (typeof applyChartLayout === "function") {
+                applyChartLayout();
+            }
+        }, 200);
+
+        // Close menu
+        document.getElementById("loadLayoutMenu").classList.add("hidden");
+
+        showMessage("✅ Layout '" + layout.name + "' loaded!", "success");
+        setTimeout(function() {
+            var msg = document.getElementById("message");
+            if (msg) msg.classList.add("hidden");
+        }, 2500);
+
+    } catch (error) {
+        hideLoading();
+        console.error("Load layout error:", error);
+        alert("Failed to load layout: " + error.message);
+    }
+}
+
+// Delete layout
+async function deleteLayout(layoutId) {
+    if (!confirm("Delete this layout permanently?")) return;
+
+    try {
+        var response = await fetch("/dashboard/delete-layout/" + layoutId, {
+            method: "DELETE"
+        });
+        var data = await response.json();
+
+        if (!data.success) {
+            alert(data.message || "Delete failed.");
+            return;
+        }
+
+        loadLayoutsList();
+
+        showMessage("✅ Layout deleted!", "success");
+        setTimeout(function() {
+            var msg = document.getElementById("message");
+            if (msg) msg.classList.add("hidden");
+        }, 2000);
+
+    } catch (error) {
+        console.error("Delete layout error:", error);
+        alert("Delete failed: " + error.message);
+    }
+}
+
+// Set default layout
+async function setDefaultLayout(layoutId) {
+    try {
+        var response = await fetch("/dashboard/set-default/" + layoutId, {
+            method: "POST"
+        });
+        var data = await response.json();
+
+        if (!data.success) {
+            alert(data.message || "Failed.");
+            return;
+        }
+
+        loadLayoutsList();
+
+    } catch (error) {
+        console.error("Set default error:", error);
+    }
+}
 })();
 // ==========================================================
 // AUTH STATE CHECK (Header Buttons)
