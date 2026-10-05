@@ -694,19 +694,23 @@
 
 
        <!-- SALES TREND -->
-<div class="chart-card wide">
-    <div class="chart-header">
-        <div>
-            <h3>Sales & Profit Trend</h3>
-            <span>Monthly revenue and profitability</span>
-        </div>
-        <select class="chart-type-selector" onchange="changeChartType('salesTrendChart', this.value)">
-            <option value="line">📈 Line</option>
-            <option value="bar">📊 Bar</option>
-            <option value="area">📉 Area</option>
-        </select>
+<div class="chart-header">
+    <div>
+        <h3>Sales & Profit Trend</h3>
+        <span>Monthly revenue and profitability</span>
     </div>
-    <canvas id="salesTrendChart"></canvas>
+    <select class="chart-type-selector" id="salesTrendChartSelector" onchange="changeChartType('salesTrendChart', this.value)">
+        <option value="line">📈 Line</option>
+        <option value="bar">📊 Bar</option>
+        <option value="area">📉 Area</option>
+        <option value="stackedBar">📚 Stacked Bar</option>
+        <option value="horizontalBar">📋 Horizontal Bar</option>
+        <option value="scatter">⚫ Scatter</option>
+        <option value="radar">🎯 Radar</option>
+        <option value="pie">🥧 Pie</option>
+        <option value="doughnut">🍩 Doughnut</option>
+        <option value="polarArea">⭕ Polar Area</option>
+    </select>
 </div>
 
 
@@ -717,15 +721,18 @@
             <h3>Product Performance</h3>
             <span>Sales by product</span>
         </div>
-        <select class="chart-type-selector" onchange="changeChartType('productChart', this.value)">
-            <option value="bar">📊 Bar</option>
-            <option value="horizontalBar">📋 H-Bar</option>
-            <option value="line">📈 Line</option>
-            <option value="pie">🥧 Pie</option>
-            <option value="doughnut">🍩 Doughnut</option>
-            <option value="polarArea">⭕ Polar</option>
-            <option value="radar">🎯 Radar</option>
-        </select>
+       <select class="chart-type-selector" id="productChartSelector" onchange="changeChartType('productChart', this.value)">
+    <option value="bar">📊 Bar</option>
+    <option value="horizontalBar">📋 H-Bar</option>
+    <option value="line">📈 Line</option>
+    <option value="area">📉 Area</option>
+    <option value="pie">🥧 Pie</option>
+    <option value="doughnut">🍩 Doughnut</option>
+    <option value="polarArea">⭕ Polar</option>
+    <option value="radar">🎯 Radar</option>
+    <option value="scatter">⚫ Scatter</option>
+    <option value="bubble">🫧 Bubble</option>
+</select>
     </div>
     <canvas id="productChart"></canvas>
 </div>
@@ -738,12 +745,18 @@
             <h3>Category Performance</h3>
             <span>Sales by category</span>
         </div>
-        <select class="chart-type-selector" onchange="changeChartType('categoryChart', this.value)">
-            <option value="doughnut">🍩 Doughnut</option>
-            <option value="pie">🥧 Pie</option>
-            <option value="bar">📊 Bar</option>
-            <option value="polarArea">⭕ Polar</option>
-        </select>
+        <select class="chart-type-selector" id="categoryChartSelector" onchange="changeChartType('categoryChart', this.value)">
+    <option value="doughnut">🍩 Doughnut</option>
+    <option value="pie">🥧 Pie</option>
+    <option value="bar">📊 Bar</option>
+    <option value="horizontalBar">📋 H-Bar</option>
+    <option value="polarArea">⭕ Polar</option>
+    <option value="radar">🎯 Radar</option>
+    <option value="line">📈 Line</option>
+    <option value="area">📉 Area</option>
+    <option value="scatter">⚫ Scatter</option>
+    <option value="bubble">🫧 Bubble</option>
+</select>
     </div>
     <canvas id="categoryChart"></canvas>
 </div>
@@ -754,11 +767,18 @@
             <h3>Sales vs Profit</h3>
             <span>Monthly comparison</span>
         </div>
-        <select class="chart-type-selector" onchange="changeChartType('profitTrendChart', this.value)">
-            <option value="line">📈 Line</option>
-            <option value="bar">📊 Bar</option>
-            <option value="area">📉 Area</option>
-        </select>
+       <select class="chart-type-selector" id="profitTrendChartSelector" onchange="changeChartType('profitTrendChart', this.value)">
+    <option value="line">📈 Line</option>
+    <option value="bar">📊 Bar</option>
+    <option value="area">📉 Area</option>
+    <option value="stackedBar">📚 Stacked Bar</option>
+    <option value="horizontalBar">📋 Horizontal Bar</option>
+    <option value="scatter">⚫ Scatter</option>
+    <option value="radar">🎯 Radar</option>
+    <option value="pie">🥧 Pie</option>
+    <option value="doughnut">🍩 Doughnut</option>
+    <option value="polarArea">⭕ Polar Area</option>
+</select>
     </div>
     <canvas id="profitTrendChart"></canvas>
 </div>
@@ -771,12 +791,18 @@
             <h3>Order Type Distribution</h3>
             <span>By revenue</span>
         </div>
-        <select class="chart-type-selector" onchange="changeChartType('orderTypeChart', this.value)">
-            <option value="doughnut">🍩 Doughnut</option>
-            <option value="pie">🥧 Pie</option>
-            <option value="bar">📊 Bar</option>
-            <option value="polarArea">⭕ Polar</option>
-        </select>
+        <select class="chart-type-selector" id="orderTypeChartSelector" onchange="changeChartType('orderTypeChart', this.value)">
+    <option value="doughnut">🍩 Doughnut</option>
+    <option value="pie">🥧 Pie</option>
+    <option value="bar">📊 Bar</option>
+    <option value="horizontalBar">📋 H-Bar</option>
+    <option value="polarArea">⭕ Polar</option>
+    <option value="radar">🎯 Radar</option>
+    <option value="line">📈 Line</option>
+    <option value="area">📉 Area</option>
+    <option value="scatter">⚫ Scatter</option>
+    <option value="bubble">🫧 Bubble</option>
+</select>
     </div>
     <canvas id="orderTypeChart"></canvas>
 </div>
@@ -788,12 +814,18 @@
             <h3>State Performance</h3>
             <span>Sales by state</span>
         </div>
-        <select class="chart-type-selector" onchange="changeChartType('stateChart', this.value)">
-            <option value="horizontalBar">📋 H-Bar</option>
-            <option value="bar">📊 Bar</option>
-            <option value="pie">🥧 Pie</option>
-            <option value="doughnut">🍩 Doughnut</option>
-        </select>
+       <select class="chart-type-selector" id="stateChartSelector" onchange="changeChartType('stateChart', this.value)">
+    <option value="horizontalBar">📋 H-Bar</option>
+    <option value="bar">📊 Bar</option>
+    <option value="pie">🥧 Pie</option>
+    <option value="doughnut">🍩 Doughnut</option>
+    <option value="polarArea">⭕ Polar</option>
+    <option value="radar">🎯 Radar</option>
+    <option value="line">📈 Line</option>
+    <option value="area">📉 Area</option>
+    <option value="scatter">⚫ Scatter</option>
+    <option value="bubble">🫧 Bubble</option>
+</select>
     </div>
     <canvas id="stateChart"></canvas>
 </div>
@@ -806,13 +838,18 @@
             <h3>Top Customers</h3>
             <span>Highest revenue customers</span>
         </div>
-        <select class="chart-type-selector" onchange="changeChartType('customerChart', this.value)">
-            <option value="horizontalBar">📋 H-Bar</option>
-            <option value="bar">📊 Bar</option>
-            <option value="pie">🥧 Pie</option>
-            <option value="doughnut">🍩 Doughnut</option>
-            <option value="polarArea">⭕ Polar</option>
-        </select>
+        <select class="chart-type-selector" id="customerChartSelector" onchange="changeChartType('customerChart', this.value)">
+    <option value="horizontalBar">📋 H-Bar</option>
+    <option value="bar">📊 Bar</option>
+    <option value="pie">🥧 Pie</option>
+    <option value="doughnut">🍩 Doughnut</option>
+    <option value="polarArea">⭕ Polar</option>
+    <option value="radar">🎯 Radar</option>
+    <option value="line">📈 Line</option>
+    <option value="area">📉 Area</option>
+    <option value="scatter">⚫ Scatter</option>
+    <option value="bubble">🫧 Bubble</option>
+</select>
     </div>
     <canvas id="customerChart"></canvas>
 </div>

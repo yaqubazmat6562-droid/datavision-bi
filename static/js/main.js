@@ -63,14 +63,36 @@
     // CHART TYPE PREFERENCES (store user choices)
     // ==========================================================
     var chartTypePreferences = {
-        salesTrendChart: "line",
-        productChart: "bar",
-        categoryChart: "doughnut",
-        profitTrendChart: "line",
-        orderTypeChart: "doughnut",
-        stateChart: "horizontalBar",
-        customerChart: "horizontalBar"
-    };
+    salesTrendChart: "line",
+    productChart: "bar",
+    categoryChart: "doughnut",
+    profitTrendChart: "line",
+    orderTypeChart: "doughnut",
+    stateChart: "horizontalBar",
+    customerChart: "horizontalBar"
+};
+
+// Saare 10 chart types ka config
+var CHART_TYPE_MAP = {
+    line:          { jsType: "line",       indexAxis: "x", fill: false, legend: true },
+    area:          { jsType: "line",       indexAxis: "x", fill: true,  legend: true },
+    bar:           { jsType: "bar",        indexAxis: "x", fill: false, legend: false },
+    horizontalBar: { jsType: "bar",        indexAxis: "y", fill: false, legend: false },
+    stackedBar:    { jsType: "bar",        indexAxis: "x", fill: false, legend: true, stacked: true },
+    pie:           { jsType: "pie",        indexAxis: "x", fill: false, legend: true },
+    doughnut:      { jsType: "doughnut",   indexAxis: "x", fill: false, legend: true },
+    polarArea:     { jsType: "polarArea",  indexAxis: "x", fill: false, legend: true },
+    radar:         { jsType: "radar",      indexAxis: "x", fill: true,  legend: true },
+    scatter:       { jsType: "scatter",    indexAxis: "x", fill: false, legend: true },
+    bubble:        { jsType: "bubble",     indexAxis: "x", fill: false, legend: true }
+};
+
+// Color palette for pie/doughnut/polar charts
+var CHART_COLORS = [
+    "#00b4d8", "#0b1f3a", "#16a34a", "#f59e0b",
+    "#dc2626", "#8b5cf6", "#06b6d4", "#84cc16",
+    "#ec4899", "#f97316", "#14b8a6", "#a855f7"
+];
 // DATAVISION BI - Main JavaScript
 // Clean minimal version
 
@@ -1110,193 +1132,250 @@
     }
 
         function renderSalesTrend(data, chartType) {
-        chartType = chartType || chartTypePreferences.salesTrendChart || "line";
+    chartType = chartType || chartTypePreferences.salesTrendChart || "line";
 
-        var canvas = document.getElementById("salesTrendChart");
-        if (!canvas || !data.length) return;
-        if (window.salesTrendChartInstance) window.salesTrendChartInstance.destroy();
+    var canvas = document.getElementById("salesTrendChart");
+    if (!canvas || !data.length) return;
+    if (window.salesTrendChartInstance) window.salesTrendChartInstance.destroy();
 
-        var business = appState.dashboardData.business_columns || {};
-        var salesCol = business.sales;
-        var costCol = business.cost;
+    var business = appState.dashboardData.business_columns || {};
+    var salesCol = business.sales;
+    var costCol = business.cost;
 
-        var labels = data.map(function(item) { return item.Year_Month || item.month || ""; });
-        var salesValues = data.map(function(item) { return Number(item[salesCol] || 0); });
-        var costValues = data.map(function(item) { return Number(item[costCol] || 0); });
-        var profitValues = salesValues.map(function(s, i) { return s - costValues[i]; });
+    var labels = data.map(function(item) { return item.Year_Month || item.month || ""; });
+    var salesValues = data.map(function(item) { return Number(item[salesCol] || 0); });
+    var costValues = data.map(function(item) { return Number(item[costCol] || 0); });
+    var profitValues = salesValues.map(function(s, i) { return s - costValues[i]; });
 
-        // Map custom types to Chart.js types
-        var chartJsType = chartType;
-        var fill = false;
-        if (chartType === "area") {
-            chartJsType = "line";
-            fill = true;
+    var config = CHART_TYPE_MAP[chartType] || CHART_TYPE_MAP.line;
+    var chartJsType = config.jsType;
+
+    // Prepare datasets
+    var datasets = [
+        {
+            label: "Sales",
+            data: salesValues,
+            tension: 0.35,
+            borderWidth: 3,
+            borderColor: "#00b4d8",
+            backgroundColor: "rgba(0, 180, 216, 0.5)",
+            fill: config.fill,
+            pointRadius: 3,
+            pointHoverRadius: 6
+        },
+        {
+            label: "Profit",
+            data: profitValues,
+            tension: 0.35,
+            borderWidth: 3,
+            borderColor: "#16a34a",
+            backgroundColor: "rgba(22, 163, 74, 0.5)",
+            fill: config.fill,
+            pointRadius: 3,
+            pointHoverRadius: 6
         }
+    ];
 
-        window.salesTrendChartInstance = new Chart(canvas, {
-            type: chartJsType,
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: "Sales",
-                        data: salesValues,
-                        tension: 0.35,
-                        borderWidth: 3,
-                        borderColor: "#00b4d8",
-                        backgroundColor: "rgba(0, 180, 216, 0.2)",
-                        fill: fill
-                    },
-                    {
-                        label: "Profit",
-                        data: profitValues,
-                        tension: 0.35,
-                        borderWidth: 3,
-                        borderColor: "#16a34a",
-                        backgroundColor: "rgba(22, 163, 74, 0.2)",
-                        fill: fill
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: true, position: "top" } }
-            }
-        });
+    // For pie/doughnut/polar, only use Sales
+    if (["pie", "doughnut", "polarArea"].includes(chartType)) {
+        datasets = [{
+            label: "Sales",
+            data: salesValues,
+            backgroundColor: CHART_COLORS
+        }];
     }
 
-       function renderProductChart(data, chartType) {
-        chartType = chartType || chartTypePreferences.productChart || "bar";
-
-        var canvas = document.getElementById("productChart");
-        if (!canvas || !data.length) return;
-        if (window.productChartInstance) window.productChartInstance.destroy();
-
-        var business = appState.dashboardData.business_columns || {};
-        var productCol = business.product;
-        var salesCol = business.sales;
-
-        var labels = data.map(function(item) { return item[productCol]; });
-        var values = data.map(function(item) { return Number(item[salesCol] || 0); });
-
-        var colors = [
-            "#00b4d8", "#0b1f3a", "#16a34a", "#f59e0b",
-            "#dc2626", "#8b5cf6", "#06b6d4", "#84cc16",
-            "#ec4899", "#f97316"
+    // For scatter, use {x, y} format
+    if (chartType === "scatter" || chartType === "bubble") {
+        datasets = [
+            {
+                label: "Sales vs Profit",
+                data: salesValues.map(function(s, i) {
+                    return { x: s, y: profitValues[i] };
+                }),
+                backgroundColor: "#00b4d8",
+                pointRadius: 6
+            }
         ];
+    }
 
-        var chartJsType = chartType;
-        var indexAxis = "x";
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: config.legend, position: "top" }
+        },
+        indexAxis: config.indexAxis
+    };
 
-        if (chartType === "horizontalBar") {
-            chartJsType = "bar";
-            indexAxis = "y";
-        }
-
-        var options = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            indexAxis: indexAxis
+    if (config.stacked && (chartType === "stackedBar")) {
+        options.scales = {
+            x: { stacked: true },
+            y: { stacked: true }
         };
-
-        // Doughnut/Pie need legend
-        if (chartType === "pie" || chartType === "doughnut" || chartType === "polarArea") {
-            options.plugins.legend = { display: true, position: "bottom" };
-        }
-
-        window.productChartInstance = new Chart(canvas, {
-            type: chartJsType,
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: "Sales",
-                    data: values,
-                    backgroundColor: colors,
-                    borderColor: "#ffffff",
-                    borderWidth: 2
-                }]
-            },
-            options: options
-        });
     }
 
-        function renderCategoryChart(data, chartType) {
-        chartType = chartType || chartTypePreferences.categoryChart || "doughnut";
+    if (chartType === "scatter" || chartType === "bubble") {
+        options.scales = {
+            x: { type: "linear", position: "bottom", title: { display: true, text: "Sales" } },
+            y: { title: { display: true, text: "Profit" } }
+        };
+    }
 
-        var canvas = document.getElementById("categoryChart");
-        if (!canvas || !data.length) return;
-        if (window.categoryChartInstance) window.categoryChartInstance.destroy();
+    window.salesTrendChartInstance = new Chart(canvas, {
+        type: chartJsType,
+        data: { labels: labels, datasets: datasets },
+        options: options
+    });
+}
+     function renderProductChart(data, chartType) {
+    chartType = chartType || chartTypePreferences.productChart || "bar";
 
-        var business = appState.dashboardData.business_columns || {};
-        var categoryCol = business.category;
-        var salesCol = business.sales;
+    var canvas = document.getElementById("productChart");
+    if (!canvas || !data.length) return;
+    if (window.productChartInstance) window.productChartInstance.destroy();
 
-        var labels = data.map(function(item) { return item[categoryCol]; });
-        var values = data.map(function(item) { return Number(item[salesCol] || 0); });
+    var business = appState.dashboardData.business_columns || {};
+    var productCol = business.product;
+    var salesCol = business.sales;
 
-        var colors = ["#00b4d8", "#0b1f3a", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6"];
+    var labels = data.map(function(item) { return item[productCol]; });
+    var values = data.map(function(item) { return Number(item[salesCol] || 0); });
 
-        window.categoryChartInstance = new Chart(canvas, {
-            type: chartType,
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: colors,
-                    borderColor: "#ffffff",
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: true, position: "bottom" } }
+    var config = CHART_TYPE_MAP[chartType] || CHART_TYPE_MAP.bar;
+    var chartJsType = config.jsType;
+
+    var datasets = [{
+        label: "Sales",
+        data: values,
+        backgroundColor: CHART_COLORS,
+        borderColor: "#ffffff",
+        borderWidth: 2
+    }];
+
+    if (chartType === "scatter" || chartType === "bubble") {
+        datasets = [{
+            label: "Sales",
+            data: values.map(function(v, i) { return { x: i + 1, y: v }; }),
+            backgroundColor: "#00b4d8",
+            pointRadius: 8
+        }];
+    }
+
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: config.legend, position: "bottom" } },
+        indexAxis: config.indexAxis
+    };
+
+    if (chartType === "scatter" || chartType === "bubble") {
+        options.scales = {
+            x: { type: "linear", title: { display: true, text: "Product Index" } },
+            y: { title: { display: true, text: "Sales" } }
+        };
+        // Scatter labels hide
+        options.plugins.tooltip = {
+            callbacks: {
+                label: function(ctx) {
+                    return labels[ctx.dataIndex] + ": " + ctx.parsed.y.toLocaleString();
+                }
             }
-        });
+        };
     }
+
+    window.productChartInstance = new Chart(canvas, {
+        type: chartJsType,
+        data: { labels: labels, datasets: datasets },
+        options: options
+    });
+}
+
+      function renderCategoryChart(data, chartType) {
+    chartType = chartType || chartTypePreferences.categoryChart || "doughnut";
+
+    var canvas = document.getElementById("categoryChart");
+    if (!canvas || !data.length) return;
+    if (window.categoryChartInstance) window.categoryChartInstance.destroy();
+
+    var business = appState.dashboardData.business_columns || {};
+    var categoryCol = business.category;
+    var salesCol = business.sales;
+
+    var labels = data.map(function(item) { return item[categoryCol]; });
+    var values = data.map(function(item) { return Number(item[salesCol] || 0); });
+
+    var config = CHART_TYPE_MAP[chartType] || CHART_TYPE_MAP.doughnut;
+    var chartJsType = config.jsType;
+
+    var datasets = [{
+        label: "Sales",
+        data: values,
+        backgroundColor: CHART_COLORS,
+        borderColor: "#ffffff",
+        borderWidth: 2
+    }];
+
+    if (chartType === "scatter" || chartType === "bubble") {
+        datasets = [{
+            label: "Sales",
+            data: values.map(function(v, i) { return { x: i + 1, y: v }; }),
+            backgroundColor: "#00b4d8",
+            pointRadius: 8
+        }];
+    }
+
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: config.legend, position: "bottom" } },
+        indexAxis: config.indexAxis
+    };
+
+    window.categoryChartInstance = new Chart(canvas, {
+        type: chartJsType,
+        data: { labels: labels, datasets: datasets },
+        options: options
+    });
+}
         // ==========================================================
     // CHANGE CHART TYPE (Dynamic Chart Switcher)
     // ==========================================================
     function changeChartType(chartId, newType) {
-        // Store preference
-        chartTypePreferences[chartId] = newType;
+    chartTypePreferences[chartId] = newType;
 
-        // Re-render the specific chart
-        if (!appState.dashboardData) return;
+    if (!appState.dashboardData) return;
+    var data = appState.dashboardData;
 
-        var data = appState.dashboardData;
-
-        try {
-            switch (chartId) {
-                case "salesTrendChart":
-                    renderSalesTrend(data.monthly_trend || [], newType);
-                    break;
-                case "productChart":
-                    renderProductChart(data.products || [], newType);
-                    break;
-                case "categoryChart":
-                    renderCategoryChart(data.categories || [], newType);
-                    break;
-                case "profitTrendChart":
-                    renderProfitTrend(data.monthly_trend || [], newType);
-                    break;
-                case "orderTypeChart":
-                    renderOrderTypeChart(data.order_types || [], newType);
-                    break;
-                case "stateChart":
-                    renderStateChart(data.states || [], newType);
-                    break;
-                case "customerChart":
-                    renderCustomerChart(data.customers || [], newType);
-                    break;
-            }
-            console.log("Chart " + chartId + " switched to: " + newType);
-        } catch (error) {
-            console.error("Chart switch error:", error);
+    try {
+        switch (chartId) {
+            case "salesTrendChart":
+                renderSalesTrend(data.monthly_trend || [], newType);
+                break;
+            case "productChart":
+                renderProductChart(data.products || [], newType);
+                break;
+            case "categoryChart":
+                renderCategoryChart(data.categories || [], newType);
+                break;
+            case "profitTrendChart":
+                renderProfitTrend(data.monthly_trend || [], newType);
+                break;
+            case "orderTypeChart":
+                renderOrderTypeChart(data.order_types || [], newType);
+                break;
+            case "stateChart":
+                renderStateChart(data.states || [], newType);
+                break;
+            case "customerChart":
+                renderCustomerChart(data.customers || [], newType);
+                break;
         }
+        console.log("✅ Chart " + chartId + " switched to: " + newType);
+    } catch (error) {
+        console.error("Chart switch error:", error);
     }
+}
     // ==========================================================
     // DASHBOARD FILTERS
     // ==========================================================
@@ -1821,196 +1900,228 @@
     // ADDITIONAL CHARTS
     // ==========================================================
 
-        function renderProfitTrend(data, chartType) {
-        chartType = chartType || chartTypePreferences.profitTrendChart || "line";
+       function renderProfitTrend(data, chartType) {
+    chartType = chartType || chartTypePreferences.profitTrendChart || "line";
 
-        var canvas = document.getElementById("profitTrendChart");
-        if (!canvas || !data.length) return;
-        if (window.profitTrendChartInstance) window.profitTrendChartInstance.destroy();
+    var canvas = document.getElementById("profitTrendChart");
+    if (!canvas || !data.length) return;
+    if (window.profitTrendChartInstance) window.profitTrendChartInstance.destroy();
 
-        var business = appState.dashboardData.business_columns || {};
-        var salesCol = business.sales;
-        var costCol = business.cost;
+    var business = appState.dashboardData.business_columns || {};
+    var salesCol = business.sales;
+    var costCol = business.cost;
 
-        var labels = data.map(function(item) { return item.Year_Month || ""; });
-        var sales = data.map(function(item) { return Number(item[salesCol] || 0); });
-        var costs = data.map(function(item) { return Number(item[costCol] || 0); });
-        var profit = sales.map(function(v, i) { return v - costs[i]; });
+    var labels = data.map(function(item) { return item.Year_Month || ""; });
+    var sales = data.map(function(item) { return Number(item[salesCol] || 0); });
+    var costs = data.map(function(item) { return Number(item[costCol] || 0); });
+    var profit = sales.map(function(v, i) { return v - costs[i]; });
 
-        var chartJsType = chartType;
-        var fill = false;
-        if (chartType === "area") {
-            chartJsType = "line";
-            fill = true;
+    var config = CHART_TYPE_MAP[chartType] || CHART_TYPE_MAP.line;
+    var chartJsType = config.jsType;
+
+    var datasets = [
+        {
+            label: "Sales",
+            data: sales,
+            tension: 0.3,
+            borderColor: "#00b4d8",
+            backgroundColor: "rgba(0, 180, 216, 0.5)",
+            borderWidth: 3,
+            fill: config.fill
+        },
+        {
+            label: "Profit",
+            data: profit,
+            tension: 0.3,
+            borderColor: "#16a34a",
+            backgroundColor: "rgba(22, 163, 74, 0.5)",
+            borderWidth: 3,
+            fill: config.fill
         }
+    ];
 
-        window.profitTrendChartInstance = new Chart(canvas, {
-            type: chartJsType,
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: "Sales",
-                        data: sales,
-                        tension: 0.3,
-                        borderColor: "#00b4d8",
-                        backgroundColor: "rgba(0, 180, 216, 0.2)",
-                        borderWidth: 3,
-                        fill: fill
-                    },
-                    {
-                        label: "Profit",
-                        data: profit,
-                        tension: 0.3,
-                        borderColor: "#16a34a",
-                        backgroundColor: "rgba(22, 163, 74, 0.2)",
-                        borderWidth: 3,
-                        fill: fill
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: true, position: "top" } }
-            }
-        });
+    if (["pie", "doughnut", "polarArea"].includes(chartType)) {
+        datasets = [{
+            label: "Sales",
+            data: sales,
+            backgroundColor: CHART_COLORS
+        }];
     }
 
-        function renderOrderTypeChart(data, chartType) {
-        chartType = chartType || chartTypePreferences.orderTypeChart || "doughnut";
-
-        var canvas = document.getElementById("orderTypeChart");
-        if (!canvas || !data.length) return;
-        if (window.orderTypeChartInstance) window.orderTypeChartInstance.destroy();
-
-        var business = appState.dashboardData.business_columns || {};
-        var col = business.order_type;
-        var salesCol = business.sales;
-
-        if (!col) return;
-
-        var labels = data.map(function(item) { return item[col]; });
-        var values = data.map(function(item) { return Number(item[salesCol] || 0); });
-
-        window.orderTypeChartInstance = new Chart(canvas, {
-            type: chartType,
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: ["#00b4d8", "#0b1f3a", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6"]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: true, position: "bottom" } }
-            }
-        });
+    if (chartType === "scatter" || chartType === "bubble") {
+        datasets = [{
+            label: "Sales vs Profit",
+            data: sales.map(function(s, i) { return { x: s, y: profit[i] }; }),
+            backgroundColor: "#00b4d8",
+            pointRadius: 6
+        }];
     }
+
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: config.legend, position: "top" } },
+        indexAxis: config.indexAxis
+    };
+
+    if (config.stacked) {
+        options.scales = { x: { stacked: true }, y: { stacked: true } };
+    }
+
+    window.profitTrendChartInstance = new Chart(canvas, {
+        type: chartJsType,
+        data: { labels: labels, datasets: datasets },
+        options: options
+    });
+}
+       function renderOrderTypeChart(data, chartType) {
+    chartType = chartType || chartTypePreferences.orderTypeChart || "doughnut";
+
+    var canvas = document.getElementById("orderTypeChart");
+    if (!canvas || !data.length) return;
+    if (window.orderTypeChartInstance) window.orderTypeChartInstance.destroy();
+
+    var business = appState.dashboardData.business_columns || {};
+    var col = business.order_type;
+    var salesCol = business.sales;
+
+    if (!col) return;
+
+    var labels = data.map(function(item) { return item[col]; });
+    var values = data.map(function(item) { return Number(item[salesCol] || 0); });
+
+    var config = CHART_TYPE_MAP[chartType] || CHART_TYPE_MAP.doughnut;
+    var chartJsType = config.jsType;
+
+    var datasets = [{
+        label: "Sales",
+        data: values,
+        backgroundColor: CHART_COLORS,
+        borderColor: "#ffffff",
+        borderWidth: 2
+    }];
+
+    if (chartType === "scatter" || chartType === "bubble") {
+        datasets = [{
+            label: "Sales",
+            data: values.map(function(v, i) { return { x: i + 1, y: v }; }),
+            backgroundColor: "#00b4d8",
+            pointRadius: 8
+        }];
+    }
+
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: config.legend, position: "bottom" } },
+        indexAxis: config.indexAxis
+    };
+
+    window.orderTypeChartInstance = new Chart(canvas, {
+        type: chartJsType,
+        data: { labels: labels, datasets: datasets },
+        options: options
+    });
+}
        function renderStateChart(data, chartType) {
-        chartType = chartType || chartTypePreferences.stateChart || "horizontalBar";
+    chartType = chartType || chartTypePreferences.stateChart || "horizontalBar";
 
-        var canvas = document.getElementById("stateChart");
-        if (!canvas || !data.length) return;
-        if (window.stateChartInstance) window.stateChartInstance.destroy();
+    var canvas = document.getElementById("stateChart");
+    if (!canvas || !data.length) return;
+    if (window.stateChartInstance) window.stateChartInstance.destroy();
 
-        var business = appState.dashboardData.business_columns || {};
-        var col = business.state;
-        var salesCol = business.sales;
+    var business = appState.dashboardData.business_columns || {};
+    var col = business.state;
+    var salesCol = business.sales;
 
-        if (!col) return;
+    if (!col) return;
 
-        var labels = data.map(function(item) { return item[col]; });
-        var values = data.map(function(item) { return Number(item[salesCol] || 0); });
+    var labels = data.map(function(item) { return item[col]; });
+    var values = data.map(function(item) { return Number(item[salesCol] || 0); });
 
-        var chartJsType = chartType;
-        var indexAxis = "x";
+    var config = CHART_TYPE_MAP[chartType] || CHART_TYPE_MAP.horizontalBar;
+    var chartJsType = config.jsType;
 
-        if (chartType === "horizontalBar") {
-            chartJsType = "bar";
-            indexAxis = "y";
-        }
+    var datasets = [{
+        label: "Sales",
+        data: values,
+        backgroundColor: CHART_COLORS,
+        borderColor: "#ffffff",
+        borderWidth: 2
+    }];
 
-        var options = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            indexAxis: indexAxis
-        };
-
-        if (chartType === "pie" || chartType === "doughnut") {
-            options.plugins.legend = { display: true, position: "bottom" };
-        }
-
-        window.stateChartInstance = new Chart(canvas, {
-            type: chartJsType,
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: "Sales",
-                    data: values,
-                    backgroundColor: chartType === "pie" || chartType === "doughnut"
-                        ? ["#00b4d8", "#0b1f3a", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6"]
-                        : "#0b1f3a"
-                }]
-            },
-            options: options
-        });
+    if (chartType === "scatter" || chartType === "bubble") {
+        datasets = [{
+            label: "Sales",
+            data: values.map(function(v, i) { return { x: i + 1, y: v }; }),
+            backgroundColor: "#00b4d8",
+            pointRadius: 8
+        }];
     }
 
-       function renderCustomerChart(data, chartType) {
-        chartType = chartType || chartTypePreferences.customerChart || "horizontalBar";
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: config.legend, position: "bottom" } },
+        indexAxis: config.indexAxis
+    };
 
-        var canvas = document.getElementById("customerChart");
-        if (!canvas || !data.length) return;
-        if (window.customerChartInstance) window.customerChartInstance.destroy();
+    window.stateChartInstance = new Chart(canvas, {
+        type: chartJsType,
+        data: { labels: labels, datasets: datasets },
+        options: options
+    });
+}
 
-        var business = appState.dashboardData.business_columns || {};
-        var col = business.customer;
-        var salesCol = business.sales;
+      function renderCustomerChart(data, chartType) {
+    chartType = chartType || chartTypePreferences.customerChart || "horizontalBar";
 
-        if (!col) return;
+    var canvas = document.getElementById("customerChart");
+    if (!canvas || !data.length) return;
+    if (window.customerChartInstance) window.customerChartInstance.destroy();
 
-        var labels = data.map(function(item) { return item[col]; });
-        var values = data.map(function(item) { return Number(item[salesCol] || 0); });
+    var business = appState.dashboardData.business_columns || {};
+    var col = business.customer;
+    var salesCol = business.sales;
 
-        var chartJsType = chartType;
-        var indexAxis = "x";
+    if (!col) return;
 
-        if (chartType === "horizontalBar") {
-            chartJsType = "bar";
-            indexAxis = "y";
-        }
+    var labels = data.map(function(item) { return item[col]; });
+    var values = data.map(function(item) { return Number(item[salesCol] || 0); });
 
-        var options = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            indexAxis: indexAxis
-        };
+    var config = CHART_TYPE_MAP[chartType] || CHART_TYPE_MAP.horizontalBar;
+    var chartJsType = config.jsType;
 
-        if (chartType === "pie" || chartType === "doughnut" || chartType === "polarArea") {
-            options.plugins.legend = { display: true, position: "bottom" };
-        }
+    var datasets = [{
+        label: "Revenue",
+        data: values,
+        backgroundColor: CHART_COLORS,
+        borderColor: "#ffffff",
+        borderWidth: 2
+    }];
 
-        window.customerChartInstance = new Chart(canvas, {
-            type: chartJsType,
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: "Revenue",
-                    data: values,
-                    backgroundColor: (chartType === "pie" || chartType === "doughnut" || chartType === "polarArea")
-                        ? ["#00b4d8", "#0b1f3a", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6", "#06b6d4", "#84cc16"]
-                        : "#00b4d8"
-                }]
-            },
-            options: options
-        });
+    if (chartType === "scatter" || chartType === "bubble") {
+        datasets = [{
+            label: "Revenue",
+            data: values.map(function(v, i) { return { x: i + 1, y: v }; }),
+            backgroundColor: "#00b4d8",
+            pointRadius: 8
+        }];
     }
 
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: config.legend, position: "bottom" } },
+        indexAxis: config.indexAxis
+    };
+
+    window.customerChartInstance = new Chart(canvas, {
+        type: chartJsType,
+        data: { labels: labels, datasets: datasets },
+        options: options
+    });
+}
     function generateDashboardInsights(data) {
         var container = document.getElementById("dashboardInsights");
         if (!container) return;

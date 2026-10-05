@@ -1725,7 +1725,7 @@ footer {
 }
 
 .chart-type-selector {
-    padding: 6px 12px;
+    padding: 8px 14px;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     background: #ffffff;
@@ -1735,8 +1735,20 @@ footer {
     cursor: pointer;
     outline: none;
     transition: all 0.2s ease;
-    min-width: 130px;
+    min-width: 160px;
     font-family: inherit;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.chart-type-selector:hover {
+    border-color: #00b4d8;
+    background: #f0f9ff;
+}
+
+.chart-type-selector:focus {
+    border-color: #00b4d8;
+    box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
 }
 
 .chart-type-selector:hover {
