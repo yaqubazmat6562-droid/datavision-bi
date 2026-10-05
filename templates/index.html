@@ -701,10 +701,35 @@
     ================================================= -->
 
     <div class="dashboard-grid">
+<!-- Hidden Charts Panel -->
+<div id="hiddenChartsPanel" class="hidden-charts-panel hidden">
+    <div class="hidden-charts-header">
+        <h3>🚫 Hidden Charts</h3>
+        <span>Click to restore</span>
+    </div>
+    <div id="hiddenChartsList" class="hidden-charts-list"></div>
+</div>
 
+<!-- Chart Layout Reset Button -->
+<div class="chart-layout-actions">
+    <button class="layout-reset-btn" onclick="resetChartLayout()">
+        ↻ Reset Chart Layout
+    </button>
+</div>
 
        <!-- SALES TREND -->
 <div class="chart-header">
+    <div class="chart-card wide" data-chart-id="salesTrendChart" draggable="true">
+    <div class="chart-controls">
+        <button class="chart-ctrl-btn drag-handle" title="Drag to move">⋮⋮</button>
+        <select class="chart-size-selector" onchange="changeChartSize('salesTrendChart', this.value)" title="Size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="wide" selected>Wide</option>
+            <option value="full">Full Width</option>
+        </select>
+        <button class="chart-ctrl-btn hide-btn" onclick="hideChart('salesTrendChart')" title="Hide">👁️</button>
+    </div>
     <div>
         <h3>Sales & Profit Trend</h3>
         <span>Monthly revenue and profitability</span>
@@ -726,6 +751,17 @@
 
         <!-- PRODUCT SALES -->
 <div class="chart-card">
+    <div class="chart-card wide" data-chart-id="salesTrendChart" draggable="true">
+    <div class="chart-controls">
+        <button class="chart-ctrl-btn drag-handle" title="Drag to move">⋮⋮</button>
+        <select class="chart-size-selector" onchange="changeChartSize('salesTrendChart', this.value)" title="Size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="wide" selected>Wide</option>
+            <option value="full">Full Width</option>
+        </select>
+        <button class="chart-ctrl-btn hide-btn" onclick="hideChart('salesTrendChart')" title="Hide">👁️</button>
+    </div>
     <div class="chart-header">
         <div>
             <h3>Product Performance</h3>
@@ -750,6 +786,17 @@
 
         <!-- CATEGORY SALES -->
 <div class="chart-card">
+    <div class="chart-card wide" data-chart-id="salesTrendChart" draggable="true">
+    <div class="chart-controls">
+        <button class="chart-ctrl-btn drag-handle" title="Drag to move">⋮⋮</button>
+        <select class="chart-size-selector" onchange="changeChartSize('salesTrendChart', this.value)" title="Size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="wide" selected>Wide</option>
+            <option value="full">Full Width</option>
+        </select>
+        <button class="chart-ctrl-btn hide-btn" onclick="hideChart('salesTrendChart')" title="Hide">👁️</button>
+    </div>
     <div class="chart-header">
         <div>
             <h3>Category Performance</h3>
@@ -772,6 +819,17 @@
 </div>
   <!-- PROFIT TREND -->
 <div class="chart-card wide">
+    <div class="chart-card wide" data-chart-id="salesTrendChart" draggable="true">
+    <div class="chart-controls">
+        <button class="chart-ctrl-btn drag-handle" title="Drag to move">⋮⋮</button>
+        <select class="chart-size-selector" onchange="changeChartSize('salesTrendChart', this.value)" title="Size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="wide" selected>Wide</option>
+            <option value="full">Full Width</option>
+        </select>
+        <button class="chart-ctrl-btn hide-btn" onclick="hideChart('salesTrendChart')" title="Hide">👁️</button>
+    </div>
     <div class="chart-header">
         <div>
             <h3>Sales vs Profit</h3>
@@ -796,6 +854,17 @@
 
 <!-- ORDER TYPE -->
 <div class="chart-card">
+    <div class="chart-card wide" data-chart-id="salesTrendChart" draggable="true">
+    <div class="chart-controls">
+        <button class="chart-ctrl-btn drag-handle" title="Drag to move">⋮⋮</button>
+        <select class="chart-size-selector" onchange="changeChartSize('salesTrendChart', this.value)" title="Size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="wide" selected>Wide</option>
+            <option value="full">Full Width</option>
+        </select>
+        <button class="chart-ctrl-btn hide-btn" onclick="hideChart('salesTrendChart')" title="Hide">👁️</button>
+    </div>
     <div class="chart-header">
         <div>
             <h3>Order Type Distribution</h3>
@@ -819,6 +888,17 @@
 
 <!-- STATE PERFORMANCE -->
 <div class="chart-card">
+    <div class="chart-card wide" data-chart-id="salesTrendChart" draggable="true">
+    <div class="chart-controls">
+        <button class="chart-ctrl-btn drag-handle" title="Drag to move">⋮⋮</button>
+        <select class="chart-size-selector" onchange="changeChartSize('salesTrendChart', this.value)" title="Size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="wide" selected>Wide</option>
+            <option value="full">Full Width</option>
+        </select>
+        <button class="chart-ctrl-btn hide-btn" onclick="hideChart('salesTrendChart')" title="Hide">👁️</button>
+    </div>
     <div class="chart-header">
         <div>
             <h3>State Performance</h3>
@@ -843,6 +923,17 @@
 
 <!-- TOP CUSTOMERS -->
 <div class="chart-card wide">
+    <div class="chart-card wide" data-chart-id="salesTrendChart" draggable="true">
+    <div class="chart-controls">
+        <button class="chart-ctrl-btn drag-handle" title="Drag to move">⋮⋮</button>
+        <select class="chart-size-selector" onchange="changeChartSize('salesTrendChart', this.value)" title="Size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="wide" selected>Wide</option>
+            <option value="full">Full Width</option>
+        </select>
+        <button class="chart-ctrl-btn hide-btn" onclick="hideChart('salesTrendChart')" title="Hide">👁️</button>
+    </div>
     <div class="chart-header">
         <div>
             <h3>Top Customers</h3>

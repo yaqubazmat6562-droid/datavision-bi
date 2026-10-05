@@ -588,6 +588,26 @@ var CHART_COLORS = [
         renderCustomerChart(data.customers || []);
         generateDashboardInsights(data);
     }
+    function renderDashboard(data) {
+    renderDashboardKPIs(data.kpis);
+    renderDataModel(data);
+    renderSalesTrend(data.monthly_trend || []);
+    renderProductChart(data.products || []);
+    renderCategoryChart(data.categories || []);
+    renderProfitTrend(data.monthly_trend || []);
+    renderOrderTypeChart(data.order_types || []);
+    renderStateChart(data.states || []);
+    renderCustomerChart(data.customers || []);
+
+    generateDashboardInsights(data);
+
+    // Phase 3: Apply layout after render
+    setTimeout(function() {
+        if (typeof applyChartLayout === "function") {
+            applyChartLayout();
+        }
+    }, 200);
+}
         // ==========================================================
     // EXPORT ENGINE
     // ==========================================================
@@ -2241,6 +2261,11 @@ window.saveKPICustomization = saveKPICustomization;
 window.resetKPICustomization = resetKPICustomization;
 window.pickEmoji = pickEmoji;
 window.pickColor = pickColor;
+// Phase 3 - Chart Layout
+window.changeChartSize = changeChartSize;
+window.hideChart = hideChart;
+window.restoreChart = restoreChart;
+window.resetChartLayout = resetChartLayout;
 // ==========================================================
 // PHASE 2 - KPI CUSTOMIZATION ENGINE
 // ==========================================================
@@ -2385,6 +2410,277 @@ function saveKPICustomization() {
         if (msg) msg.classList.add("hidden");
     }, 2000);
 }
+// ==========================================================
+// PHASE 3 - CHART LAYOUT CUSTOMIZATION ENGINE
+// ==========================================================
+
+var LAYOUT_STORAGE_KEY = "datavision_chart_layout";
+
+var DEFAULT_CHART_LAYOUT = [
+    { id: "salesTrendChart",  size: "wide",   visible: true, order: 0 },
+    { id: "productChart",     size: "small",  visible: true, order: 1 },
+    { id: "categoryChart",    size: "small",  visible: true, order: 2 },
+    { id: "profitTrendChart", size: "wide",   visible: true, order: 3 },
+    { id: "orderTypeChart",   size: "small",  visible: true, order: 4 },
+    { id: "stateChart",       size: "small",  visible: true, order: 5 },
+    { id: "customerChart",    size: "wide",   visible: true, order: 6 }
+];
+
+var chartLayout = [];
+var draggedChartId = null;
+
+// Load layout from localStorage
+function loadChartLayout() {
+    try {
+        var saved = localStorage.getItem(LAYOUT_STORAGE_KEY);
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length === DEFAULT_CHART_LAYOUT.length) {
+                chartLayout = parsed;
+                return;
+            }
+        }
+    } catch (e) {
+        console.error("Load layout error:", e);
+    }
+    chartLayout = JSON.parse(JSON.stringify(DEFAULT_CHART_LAYOUT));
+}
+
+// Save layout to localStorage
+function saveChartLayout() {
+    try {
+        localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(chartLayout));
+    } catch (e) {
+        console.error("Save layout error:", e);
+    }
+}
+
+// Apply layout to DOM
+function applyChartLayout() {
+    var grid = document.querySelector(".dashboard-grid");
+    if (!grid) return;
+
+    // Sort by order
+    var sorted = chartLayout.slice().sort(function(a, b) {
+        return a.order - b.order;
+    });
+
+    // Apply each chart's properties
+    sorted.forEach(function(cfg) {
+        var card = grid.querySelector('[data-chart-id="' + cfg.id + '"]');
+        if (!card) return;
+
+        // Size
+        card.classList.remove("size-small", "size-medium", "size-wide", "size-full");
+        card.classList.add("size-" + cfg.size);
+
+        // Visible
+        if (cfg.visible) {
+            card.classList.remove("hidden-chart");
+        } else {
+            card.classList.add("hidden-chart");
+        }
+
+        // Update size selector
+        var sizeSelector = card.querySelector(".chart-size-selector");
+        if (sizeSelector) sizeSelector.value = cfg.size;
+
+        // Reorder in DOM
+        grid.appendChild(card);
+    });
+
+    // Update hidden charts panel
+    updateHiddenChartsPanel();
+
+    // Resize all visible charts after layout change
+    setTimeout(function() {
+        window.dispatchEvent(new Event("resize"));
+    }, 100);
+}
+
+// Change chart size
+function changeChartSize(chartId, newSize) {
+    var cfg = chartLayout.find(function(c) { return c.id === chartId; });
+    if (!cfg) return;
+
+    cfg.size = newSize;
+    saveChartLayout();
+    applyChartLayout();
+
+    // Resize charts after layout change
+    setTimeout(function() {
+        window.dispatchEvent(new Event("resize"));
+    }, 150);
+}
+
+// Hide chart
+function hideChart(chartId) {
+    var cfg = chartLayout.find(function(c) { return c.id === chartId; });
+    if (!cfg) return;
+
+    cfg.visible = false;
+    saveChartLayout();
+    applyChartLayout();
+
+    showMessage("Chart hidden. Find it in the Hidden Charts panel below.", "info");
+    setTimeout(function() {
+        var msg = document.getElementById("message");
+        if (msg) msg.classList.add("hidden");
+    }, 2500);
+}
+
+// Restore chart
+function restoreChart(chartId) {
+    var cfg = chartLayout.find(function(c) { return c.id === chartId; });
+    if (!cfg) return;
+
+    cfg.visible = true;
+    saveChartLayout();
+    applyChartLayout();
+
+    showMessage("Chart restored!", "success");
+    setTimeout(function() {
+        var msg = document.getElementById("message");
+        if (msg) msg.classList.add("hidden");
+    }, 2000);
+}
+
+// Update hidden charts panel
+function updateHiddenChartsPanel() {
+    var panel = document.getElementById("hiddenChartsPanel");
+    var list = document.getElementById("hiddenChartsList");
+    if (!panel || !list) return;
+
+    var hiddenCharts = chartLayout.filter(function(c) { return !c.visible; });
+
+    if (hiddenCharts.length === 0) {
+        panel.classList.add("hidden");
+        return;
+    }
+
+    panel.classList.remove("hidden");
+    list.innerHTML = "";
+
+    var CHART_NAMES = {
+        salesTrendChart: "📈 Sales & Profit Trend",
+        productChart: "📦 Product Performance",
+        categoryChart: "📊 Category Performance",
+        profitTrendChart: "💰 Sales vs Profit",
+        orderTypeChart: "🧾 Order Type Distribution",
+        stateChart: "📍 State Performance",
+        customerChart: "👥 Top Customers"
+    };
+
+    hiddenCharts.forEach(function(cfg) {
+        var item = document.createElement("div");
+        item.className = "hidden-chart-item";
+        item.onclick = function() { restoreChart(cfg.id); };
+        item.innerHTML = '<span>' + (CHART_NAMES[cfg.id] || cfg.id) + '</span><span>↩ Restore</span>';
+        list.appendChild(item);
+    });
+}
+
+// Reset chart layout
+function resetChartLayout() {
+    if (!confirm("Reset all charts to default layout?")) return;
+
+    chartLayout = JSON.parse(JSON.stringify(DEFAULT_CHART_LAYOUT));
+    saveChartLayout();
+    applyChartLayout();
+
+    showMessage("✅ Chart layout reset to default!", "success");
+    setTimeout(function() {
+        var msg = document.getElementById("message");
+        if (msg) msg.classList.add("hidden");
+    }, 2000);
+}
+
+// ==========================================================
+// DRAG AND DROP
+// ==========================================================
+
+function initializeDragAndDrop() {
+    var grid = document.querySelector(".dashboard-grid");
+    if (!grid) return;
+
+    var cards = grid.querySelectorAll(".chart-card");
+
+    cards.forEach(function(card) {
+        // Drag start
+        card.addEventListener("dragstart", function(e) {
+            // Only allow drag from handle
+            if (!e.target.classList.contains("drag-handle") && !e.target.closest(".drag-handle")) {
+                e.preventDefault();
+                return;
+            }
+
+            draggedChartId = card.dataset.chartId;
+            card.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", draggedChartId);
+        });
+
+        // Drag end
+        card.addEventListener("dragend", function() {
+            card.classList.remove("dragging");
+            grid.querySelectorAll(".chart-card").forEach(function(c) {
+                c.classList.remove("drag-over");
+            });
+            draggedChartId = null;
+        });
+
+        // Drag over
+        card.addEventListener("dragover", function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            if (card.dataset.chartId !== draggedChartId) {
+                card.classList.add("drag-over");
+            }
+        });
+
+        // Drag leave
+        card.addEventListener("dragleave", function() {
+            card.classList.remove("drag-over");
+        });
+
+        // Drop
+        card.addEventListener("drop", function(e) {
+            e.preventDefault();
+            card.classList.remove("drag-over");
+
+            var targetId = card.dataset.chartId;
+            if (!draggedChartId || draggedChartId === targetId) return;
+
+            // Swap orders
+            var sourceCfg = chartLayout.find(function(c) { return c.id === draggedChartId; });
+            var targetCfg = chartLayout.find(function(c) { return c.id === targetId; });
+
+            if (sourceCfg && targetCfg) {
+                var tempOrder = sourceCfg.order;
+                sourceCfg.order = targetCfg.order;
+                targetCfg.order = tempOrder;
+
+                saveChartLayout();
+                applyChartLayout();
+
+                showMessage("Chart moved!", "success");
+                setTimeout(function() {
+                    var msg = document.getElementById("message");
+                    if (msg) msg.classList.add("hidden");
+                }, 1500);
+            }
+        });
+    });
+}
+
+// ==========================================================
+// INITIALIZE PHASE 3
+// ==========================================================
+
+document.addEventListener("DOMContentLoaded", function() {
+    loadChartLayout();
+    initializeDragAndDrop();
+});
 })();
 // ==========================================================
 // AUTH STATE CHECK (Header Buttons)
