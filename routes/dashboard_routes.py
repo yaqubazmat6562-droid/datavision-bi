@@ -285,3 +285,13 @@ def set_default_layout(dashboard_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
+    # ==========================================================
+# SMART SUMMARY PAGE
+# ==========================================================
+@dashboard_bp.route("/summary", methods=["GET"])
+def smart_summary_page():
+    from flask import render_template
+    filename = request.args.get("filename", "").strip()
+    if not filename:
+        return "No file specified. Please upload a file first.", 400
+    return render_template("summary.html", filename=filename)

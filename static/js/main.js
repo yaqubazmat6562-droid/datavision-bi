@@ -1,4 +1,4 @@
-        // ==========================================================
+// ==========================================================
     // CURRENCY SYSTEM
     // ==========================================================
     var CURRENCY_SYMBOLS = {
@@ -567,7 +567,7 @@ var CHART_COLORS = [
     // ==========================================================
     // DASHBOARD
     // ==========================================================
-        function renderDashboard(data) {
+    function renderDashboard(data) {
         // Reset all chart instances before rebuilding
         window.salesTrendChartInstance = null;
         window.productChartInstance = null;
@@ -587,31 +587,18 @@ var CHART_COLORS = [
         renderStateChart(data.states || []);
         renderCustomerChart(data.customers || []);
         generateDashboardInsights(data);
+
+        // Phase 3: Apply layout after render
+        setTimeout(function() {
+            if (typeof applyChartLayout === "function") {
+                applyChartLayout();
+            }
+        }, 200);
     }
-    function renderDashboard(data) {
-    renderDashboardKPIs(data.kpis);
-    renderDataModel(data);
-    renderSalesTrend(data.monthly_trend || []);
-    renderProductChart(data.products || []);
-    renderCategoryChart(data.categories || []);
-    renderProfitTrend(data.monthly_trend || []);
-    renderOrderTypeChart(data.order_types || []);
-    renderStateChart(data.states || []);
-    renderCustomerChart(data.customers || []);
 
-    generateDashboardInsights(data);
-
-    // Phase 3: Apply layout after render
-    setTimeout(function() {
-        if (typeof applyChartLayout === "function") {
-            applyChartLayout();
-        }
-    }, 200);
-}
-        // ==========================================================
+    // ==========================================================
     // EXPORT ENGINE
     // ==========================================================
-
     function toggleExportMenu(event) {
         if (event) event.stopPropagation();
         var menu = document.getElementById("exportMenu");
@@ -631,8 +618,7 @@ var CHART_COLORS = [
         }
     });
 
-
-        async function exportDashboard(format) {
+    async function exportDashboard(format) {
         // Close menu
         var menu = document.getElementById("exportMenu");
         if (menu) menu.classList.add("hidden");
@@ -717,10 +703,8 @@ var CHART_COLORS = [
             showMessage("❌ Export failed: " + error.message, "error");
         }
     }
+
     // ==========================================================
-    // PDF EXPORT — Full Visual Report with Charts
-    // ==========================================================
-        // ==========================================================
     // PDF EXPORT — Server-side generation
     // ==========================================================
     async function exportToPDF() {
@@ -783,221 +767,6 @@ var CHART_COLORS = [
             console.error("PDF export error:", error);
             showMessage("PDF failed: " + error.message, "error");
         }
-    
-        // ==========================================
-        // HEADER
-        // ==========================================
-        var now = new Date();
-        var timestamp = now.toLocaleString("en-IN");
-
-        reportContainer.innerHTML =
-            '<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:20px;border-bottom:3px solid #00b4d8;margin-bottom:30px;">' +
-                '<div>' +
-                    '<h1 style="margin:0;color:#0b1f3a;font-size:28px;">DATAVISION BI</h1>' +
-                    '<p style="margin:5px 0 0;color:#64748b;font-size:14px;">Business Intelligence Report</p>' +
-                '</div>' +
-                '<div style="text-align:right;font-size:12px;color:#64748b;">' +
-                    '<p style="margin:0;"><strong>Generated:</strong> ' + timestamp + '</p>' +
-                    '<p style="margin:5px 0 0;"><strong>Source:</strong> ' + appState.dashboardFilename + '</p>' +
-                '</div>' +
-            '</div>';
-
-        // ==========================================
-        // KPI SECTION
-        // ==========================================
-        var kpis = appState.dashboardData.kpis || {};
-
-        var kpiHTML =
-            '<h2 style="font-size:20px;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">📊 Key Performance Indicators</h2>' +
-            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:30px;">';
-
-        var kpiItems = [
-            { title: "Total Sales", value: formatCurrency(kpis.total_sales) },
-            { title: "Total Cost", value: formatCurrency(kpis.total_cost) },
-            { title: "Gross Profit", value: formatCurrency(kpis.profit) },
-            { title: "Profit Margin", value: formatPercent(kpis.profit_margin) },
-            { title: "Total Orders", value: formatNumber(kpis.total_orders) },
-            { title: "Units Sold", value: formatNumber(kpis.total_units) },
-            { title: "Avg Order Value", value: formatCurrency(kpis.average_order_value) },
-            { title: "Unique Customers", value: formatNumber(kpis.unique_customers) }
-        ];
-
-        kpiItems.forEach(function(kpi) {
-            kpiHTML +=
-                '<div style="background:#f8fafc;border-left:4px solid #00b4d8;border-radius:10px;padding:15px;">' +
-                    '<div style="font-size:12px;color:#64748b;margin-bottom:6px;">' + kpi.title + '</div>' +
-                    '<div style="font-size:22px;font-weight:800;color:#0b1f3a;">' + kpi.value + '</div>' +
-                '</div>';
-        });
-        kpiHTML += '</div>';
-        reportContainer.innerHTML += kpiHTML;
-
-        // ==========================================
-        // CHARTS
-        // ==========================================
-        // Give charts a moment to render canvas
-        await new Promise(function(r) { setTimeout(r, 500); });
-
-        var chartIds = [
-            { id: "salesTrendChart", title: "Sales & Profit Trend", wide: true },
-            { id: "productChart", title: "Product Performance", wide: false },
-            { id: "categoryChart", title: "Category Performance", wide: false },
-            { id: "profitTrendChart", title: "Sales vs Profit", wide: true },
-            { id: "orderTypeChart", title: "Order Type Distribution", wide: false },
-            { id: "stateChart", title: "State Performance", wide: false },
-            { id: "customerChart", title: "Top Customers", wide: true }
-        ];
-
-        reportContainer.innerHTML +=
-            '<h2 style="font-size:20px;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">📈 Analytics & Visualizations</h2>' +
-            '<div id="pdfChartsArea" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;"></div>';
-
-        // Wait a bit more for the container to be in DOM
-        document.body.appendChild(reportContainer);
-        await new Promise(function(r) { setTimeout(r, 300); });
-
-        var chartsArea = document.getElementById("pdfChartsArea");
-
-        chartIds.forEach(function(chartInfo) {
-            var originalCanvas = document.getElementById(chartInfo.id);
-            if (!originalCanvas) return;
-
-            var wrapper = document.createElement("div");
-            wrapper.style.gridColumn = chartInfo.wide ? "span 2" : "span 1";
-            wrapper.style.background = "#ffffff";
-            wrapper.style.border = "1px solid #e2e8f0";
-            wrapper.style.borderRadius = "12px";
-            wrapper.style.padding = "15px";
-
-            var titleEl = document.createElement("h3");
-            titleEl.style.margin = "0 0 12px 0";
-            titleEl.style.fontSize = "15px";
-            titleEl.style.color = "#0b1f3a";
-            titleEl.textContent = chartInfo.title;
-            wrapper.appendChild(titleEl);
-
-            // Convert original canvas to image
-            try {
-                var img = document.createElement("img");
-                img.src = originalCanvas.toDataURL("image/png", 1.0);
-                img.style.width = "100%";
-                img.style.height = "auto";
-                img.style.display = "block";
-                img.style.borderRadius = "8px";
-                wrapper.appendChild(img);
-            } catch (err) {
-                console.error("Chart capture failed:", chartInfo.id, err);
-                wrapper.innerHTML += '<p style="color:#dc2626;font-size:12px;">Chart not available</p>';
-            }
-
-            chartsArea.appendChild(wrapper);
-        });
-
-        // ==========================================
-        // TOP PRODUCTS TABLE
-        // ==========================================
-        var data = appState.dashboardData;
-        var business = data.business_columns || {};
-
-        if (data.products && data.products.length > 0 && business.product) {
-            var tableHTML =
-                '<h2 style="font-size:20px;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">🏆 Top Products</h2>' +
-                '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-                '<thead><tr style="background:#0b1f3a;color:white;">' +
-                '<th style="padding:10px;text-align:left;">Product</th>' +
-                '<th style="padding:10px;text-align:right;">Sales</th>' +
-                '</tr></thead><tbody>';
-
-            data.products.slice(0, 10).forEach(function(item, idx) {
-                var bg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
-                tableHTML +=
-                    '<tr style="background:' + bg + ';">' +
-                    '<td style="padding:10px;border-bottom:1px solid #e2e8f0;">' + (item[business.product] || "") + '</td>' +
-                    '<td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;">' +
-                        formatCurrency(item[business.sales] || 0) +
-                    '</td>' +
-                    '</tr>';
-            });
-
-            tableHTML += '</tbody></table>';
-            reportContainer.innerHTML += tableHTML;
-        }
-
-        // ==========================================
-        // TOP CATEGORIES
-        // ==========================================
-        if (data.categories && data.categories.length > 0 && business.category) {
-            var catHTML =
-                '<h2 style="font-size:20px;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">📦 Top Categories</h2>' +
-                '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-                '<thead><tr style="background:#0b1f3a;color:white;">' +
-                '<th style="padding:10px;text-align:left;">Category</th>' +
-                '<th style="padding:10px;text-align:right;">Sales</th>' +
-                '</tr></thead><tbody>';
-
-            data.categories.slice(0, 10).forEach(function(item, idx) {
-                var bg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
-                catHTML +=
-                    '<tr style="background:' + bg + ';">' +
-                    '<td style="padding:10px;border-bottom:1px solid #e2e8f0;">' + (item[business.category] || "") + '</td>' +
-                    '<td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;">' +
-                        formatCurrency(item[business.sales] || 0) +
-                    '</td>' +
-                    '</tr>';
-            });
-
-            catHTML += '</tbody></table>';
-            reportContainer.innerHTML += catHTML;
-        }
-
-        // ==========================================
-        // FOOTER
-        // ==========================================
-        reportContainer.innerHTML +=
-            '<div style="margin-top:40px;padding-top:20px;border-top:2px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8;">' +
-                'Generated by DATAVISION BI © ' + now.getFullYear() + ' • ' + timestamp +
-            '</div>';
-
-        // ==========================================
-        // GENERATE PDF
-        // ==========================================
-        try {
-            var pdfOptions = {
-                margin: [10, 10, 10, 10],
-                filename: getExportFilename("pdf"),
-                image: { type: "jpeg", quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    letterRendering: true
-                },
-                jsPDF: {
-                    unit: "mm",
-                    format: "a4",
-                    orientation: "portrait"
-                },
-                pagebreak: { mode: ["avoid-all", "css", "legacy"] }
-            };
-
-            await html2pdf().set(pdfOptions).from(reportContainer).save();
-
-            showMessage("✅ PDF report downloaded!", "success");
-
-        } catch (err) {
-            console.error("PDF generation error:", err);
-            showMessage("❌ PDF failed: " + err.message, "error");
-        } finally {
-            // Cleanup
-            if (reportContainer.parentNode) {
-                reportContainer.parentNode.removeChild(reportContainer);
-            }
-
-            setTimeout(function() {
-                var msg = document.getElementById("message");
-                if (msg) msg.classList.add("hidden");
-            }, 4000);
-        }
     }
 
     function downloadBlob(blob, filename) {
@@ -1026,6 +795,7 @@ var CHART_COLORS = [
         var ext = format === "excel" ? "xlsx" : (format === "pdf" ? "pdf" : format);
         return base + "_report_" + ts + "." + ext;
     }
+
     async function createDashboard() {
         var fileElement = document.getElementById("fileName");
         if (!fileElement) {
@@ -1057,6 +827,39 @@ var CHART_COLORS = [
         }
     }
 
+    // ==========================================================
+    // CREATE SUMMARY (NEW - DYNAMIC)
+    // ==========================================================
+    function createSummary() {
+        var fileElement = document.getElementById("fileName");
+        if (!fileElement) {
+            alert("Please upload a file first.");
+            return;
+        }
+
+        var filename = fileElement.innerText.trim();
+        if (!filename || filename === "File") {
+            alert("Please upload a file first.");
+            return;
+        }
+
+        // Open summary in new tab
+        var url = "/summary?filename=" + encodeURIComponent(filename);
+        window.open(url, "_blank");
+    }
+
+    // ==========================================================
+    // OPEN EXECUTIVE DASHBOARD (NEW)
+    // ==========================================================
+    function openExecutiveDashboard() {
+        if (!appState.dashboardFilename) {
+            alert("Please upload a file and build a dashboard first.");
+            return;
+        }
+        var url = "/executive-dashboard?filename=" + encodeURIComponent(appState.dashboardFilename);
+        window.open(url, "_blank");
+    }
+
     async function generateDashboard() {
         if (!appState.dashboardFilename) return;
 
@@ -1085,28 +888,6 @@ var CHART_COLORS = [
         }
     }
 
-    function renderDashboard(data) {
-        renderDashboardKPIs(data.kpis);
-        renderDataModel(data);
-        renderSalesTrend(data.monthly_trend || []);
-        renderProductChart(data.products || []);
-        renderCategoryChart(data.categories || []);
-    }
-    function renderDashboard(data) {
-    renderDashboardKPIs(data.kpis);
-    renderDataModel(data);
-    renderSalesTrend(data.monthly_trend || []);
-    renderProductChart(data.products || []);
-    renderCategoryChart(data.categories || []);
-
-    // NEW: Additional charts
-    renderProfitTrend(data.monthly_trend || []);
-    renderOrderTypeChart(data.order_types || []);
-    renderStateChart(data.states || []);
-    renderCustomerChart(data.customers || []);
-
-    generateDashboardInsights(data);
-}
     function renderDashboardKPIs(kpis) {
     var container = document.getElementById("dashboardKPIs");
     if (!container) return;
@@ -1198,7 +979,7 @@ function hexToRgba(hex, alpha) {
             '<p>Category: <strong>' + (business.category || "Not detected") + '</strong></p></div>';
     }
 
-        function renderSalesTrend(data, chartType) {
+    function renderSalesTrend(data, chartType) {
     chartType = chartType || chartTypePreferences.salesTrendChart || "line";
 
     var canvas = document.getElementById("salesTrendChart");
@@ -1295,6 +1076,7 @@ function hexToRgba(hex, alpha) {
         options: options
     });
 }
+
      function renderProductChart(data, chartType) {
     chartType = chartType || chartTypePreferences.productChart || "bar";
 
@@ -1405,7 +1187,8 @@ function hexToRgba(hex, alpha) {
         options: options
     });
 }
-        // ==========================================================
+
+    // ==========================================================
     // CHANGE CHART TYPE (Dynamic Chart Switcher)
     // ==========================================================
     function changeChartType(chartId, newType) {
@@ -1443,10 +1226,11 @@ function hexToRgba(hex, alpha) {
         console.error("Chart switch error:", error);
     }
 }
+
     // ==========================================================
     // DASHBOARD FILTERS
     // ==========================================================
-        async function loadDashboardFilters() {
+    async function loadDashboardFilters() {
         if (!appState.dashboardFilename) return;
 
         var formData = new FormData();
@@ -1467,6 +1251,7 @@ function hexToRgba(hex, alpha) {
             console.error("Filter options error:", error);
         }
     }
+
     function buildDynamicFilters(options) {
         var grid = document.getElementById("dynamicFilterGrid");
         if (!grid) return;
@@ -1563,6 +1348,7 @@ function hexToRgba(hex, alpha) {
             return w.charAt(0).toUpperCase() + w.slice(1);
         }).join("");
     }
+
     function populateFilter(elementId, values, defaultText) {
         var select = document.getElementById(elementId);
         if (!select) return;
@@ -1630,7 +1416,7 @@ function hexToRgba(hex, alpha) {
         }
     }
 
-       async function resetDashboardFilters() {
+    async function resetDashboardFilters() {
         var ids = ["filterDateFrom", "filterDateTo", "filterProduct",
                    "filterCategory", "filterState", "filterCity",
                    "filterOrderType", "filterCustomer"];
@@ -1937,7 +1723,6 @@ function hexToRgba(hex, alpha) {
         }
     }
 
-   
     // ==========================================================
     // EXPOSE FUNCTIONS GLOBALLY (for onclick handlers)
     // ==========================================================
@@ -1945,6 +1730,8 @@ function hexToRgba(hex, alpha) {
     window.cleanData = cleanData;
     window.exploreData = exploreData;
     window.createDashboard = createDashboard;
+    window.createSummary = createSummary;
+    window.openExecutiveDashboard = openExecutiveDashboard;
     window.generateDashboard = generateDashboard;
     window.refreshDashboard = refreshDashboard;
     window.resetDashboardFilters = resetDashboardFilters;
@@ -1963,11 +1750,12 @@ function hexToRgba(hex, alpha) {
     window.resetQuery = resetQuery;
     window.runExplorerSearch = runExplorerSearch;
     window.loadExplorerProfile = loadExplorerProfile;
+
     // ==========================================================
     // ADDITIONAL CHARTS
     // ==========================================================
 
-       function renderProfitTrend(data, chartType) {
+    function renderProfitTrend(data, chartType) {
     chartType = chartType || chartTypePreferences.profitTrendChart || "line";
 
     var canvas = document.getElementById("profitTrendChart");
@@ -2041,7 +1829,8 @@ function hexToRgba(hex, alpha) {
         options: options
     });
 }
-       function renderOrderTypeChart(data, chartType) {
+
+    function renderOrderTypeChart(data, chartType) {
     chartType = chartType || chartTypePreferences.orderTypeChart || "doughnut";
 
     var canvas = document.getElementById("orderTypeChart");
@@ -2090,7 +1879,8 @@ function hexToRgba(hex, alpha) {
         options: options
     });
 }
-       function renderStateChart(data, chartType) {
+
+    function renderStateChart(data, chartType) {
     chartType = chartType || chartTypePreferences.stateChart || "horizontalBar";
 
     var canvas = document.getElementById("stateChart");
@@ -2140,7 +1930,7 @@ function hexToRgba(hex, alpha) {
     });
 }
 
-      function renderCustomerChart(data, chartType) {
+    function renderCustomerChart(data, chartType) {
     chartType = chartType || chartTypePreferences.customerChart || "horizontalBar";
 
     var canvas = document.getElementById("customerChart");
@@ -2189,6 +1979,7 @@ function hexToRgba(hex, alpha) {
         options: options
     });
 }
+
     function generateDashboardInsights(data) {
         var container = document.getElementById("dashboardInsights");
         if (!container) return;
@@ -2242,7 +2033,8 @@ function hexToRgba(hex, alpha) {
             container.appendChild(card);
         });
     }
-        // At the end, add these:
+
+    // Expose additional chart functions
     window.renderProfitTrend = renderProfitTrend;
     window.renderOrderTypeChart = renderOrderTypeChart;
     window.renderStateChart = renderStateChart;
@@ -2254,776 +2046,721 @@ function hexToRgba(hex, alpha) {
     window.exportToPDF = exportToPDF;
     window.changeCurrency = changeCurrency;
     window.buildDynamicFilters = buildDynamicFilters;
+
     // Phase 2 - KPI Customization
-window.openKPIModal = openKPIModal;
-window.closeKPIModal = closeKPIModal;
-window.saveKPICustomization = saveKPICustomization;
-window.resetKPICustomization = resetKPICustomization;
-window.pickEmoji = pickEmoji;
-window.pickColor = pickColor;
-// Phase 3 - Chart Layout
-window.changeChartSize = changeChartSize;
-window.hideChart = hideChart;
-window.restoreChart = restoreChart;
-window.resetChartLayout = resetChartLayout;
-// Phase 4 - Save & Load Layouts
-window.openSaveLayoutModal = openSaveLayoutModal;
-window.closeSaveLayoutModal = closeSaveLayoutModal;
-window.saveLayoutNow = saveLayoutNow;
-window.toggleLoadLayoutMenu = toggleLoadLayoutMenu;
-window.loadLayoutsList = loadLayoutsList;
-window.loadLayout = loadLayout;
-window.deleteLayout = deleteLayout;
-window.setDefaultLayout = setDefaultLayout;
-// ==========================================================
-// PHASE 2 - KPI CUSTOMIZATION ENGINE
-// ==========================================================
-
-var KPI_STORAGE_KEY = "datavision_kpi_customization";
-
-// Default KPI definitions (index-based mapping)
-var DEFAULT_KPI_CONFIG = [
-    { id: "kpi_0", title: "Total Sales",        icon: "💰", color: "#00b4d8", visible: true, highlighted: false },
-    { id: "kpi_1", title: "Total Cost",         icon: "💳", color: "#0b1f3a", visible: true, highlighted: false },
-    { id: "kpi_2", title: "Gross Profit",       icon: "📈", color: "#16a34a", visible: true, highlighted: false },
-    { id: "kpi_3", title: "Profit Margin",      icon: "🎯", color: "#f59e0b", visible: true, highlighted: false },
-    { id: "kpi_4", title: "Total Orders",       icon: "🧾", color: "#8b5cf6", visible: true, highlighted: false },
-    { id: "kpi_5", title: "Units Sold",         icon: "📦", color: "#06b6d4", visible: true, highlighted: false },
-    { id: "kpi_6", title: "Average Order Value", icon: "🛒", color: "#ec4899", visible: true, highlighted: false },
-    { id: "kpi_7", title: "Unique Customers",   icon: "👥", color: "#f97316", visible: true, highlighted: false }
-];
-
-var kpiCustomization = [];
-var currentEditingKpiIndex = null;
-
-// Load saved customization from localStorage
-function loadKPICustomization() {
-    try {
-        var saved = localStorage.getItem(KPI_STORAGE_KEY);
-        if (saved) {
-            var parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length === DEFAULT_KPI_CONFIG.length) {
-                kpiCustomization = parsed;
-                return;
-            }
-        }
-    } catch (e) {
-        console.error("Load KPI custom error:", e);
-    }
-    // Fallback to defaults
-    kpiCustomization = JSON.parse(JSON.stringify(DEFAULT_KPI_CONFIG));
-}
-
-// Save customization to localStorage
-function saveKPICustomizationToStorage() {
-    try {
-        localStorage.setItem(KPI_STORAGE_KEY, JSON.stringify(kpiCustomization));
-    } catch (e) {
-        console.error("Save KPI custom error:", e);
-    }
-}
-
-// Reset all KPI customizations
-function resetKPICustomization() {
-    if (!confirm("Reset all KPI customizations to default?")) return;
-    kpiCustomization = JSON.parse(JSON.stringify(DEFAULT_KPI_CONFIG));
-    saveKPICustomizationToStorage();
-    if (appState.dashboardData) {
-        renderDashboardKPIs(appState.dashboardData.kpis);
-    }
-    showMessage("✅ KPI customization reset!", "success");
-    setTimeout(function() {
-        var msg = document.getElementById("message");
-        if (msg) msg.classList.add("hidden");
-    }, 2000);
-}
-
-// Open KPI customize modal
-function openKPIModal(index) {
-    currentEditingKpiIndex = index;
-    var config = kpiCustomization[index];
-    if (!config) return;
-
-    document.getElementById("kpiEditTitle").value = config.title;
-    document.getElementById("kpiEditIcon").value = config.icon;
-    document.getElementById("kpiEditColor").value = config.color;
-    document.getElementById("kpiEditVisible").checked = config.visible !== false;
-    document.getElementById("kpiEditHighlight").checked = config.highlighted === true;
-
-    // Highlight selected color dot
-    document.querySelectorAll(".kpi-color-dot").forEach(function(dot) {
-        dot.classList.remove("selected");
-        if (dot.dataset.color.toLowerCase() === config.color.toLowerCase()) {
-            dot.classList.add("selected");
-        }
-    });
-
-    document.getElementById("kpiCustomizeModal").classList.remove("hidden");
-}
-
-// Close KPI modal
-function closeKPIModal() {
-    document.getElementById("kpiCustomizeModal").classList.add("hidden");
-    currentEditingKpiIndex = null;
-}
-
-// Pick emoji
-function pickEmoji(emoji) {
-    document.getElementById("kpiEditIcon").value = emoji;
-}
-
-// Pick color
-function pickColor(color) {
-    document.getElementById("kpiEditColor").value = color;
-    document.querySelectorAll(".kpi-color-dot").forEach(function(dot) {
-        dot.classList.remove("selected");
-        if (dot.dataset.color.toLowerCase() === color.toLowerCase()) {
-            dot.classList.add("selected");
-        }
-    });
-}
-
-// Save KPI customization
-function saveKPICustomization() {
-    if (currentEditingKpiIndex === null) return;
-
-    var title = document.getElementById("kpiEditTitle").value.trim();
-    var icon = document.getElementById("kpiEditIcon").value.trim() || "📊";
-    var color = document.getElementById("kpiEditColor").value;
-    var visible = document.getElementById("kpiEditVisible").checked;
-    var highlighted = document.getElementById("kpiEditHighlight").checked;
-
-    if (!title) {
-        alert("Please enter a title.");
-        return;
-    }
-
-    kpiCustomization[currentEditingKpiIndex] = {
-        id: "kpi_" + currentEditingKpiIndex,
-        title: title,
-        icon: icon,
-        color: color,
-        visible: visible,
-        highlighted: highlighted
-    };
-
-    saveKPICustomizationToStorage();
-    closeKPIModal();
-
-    if (appState.dashboardData) {
-        renderDashboardKPIs(appState.dashboardData.kpis);
-    }
-    showMessage("✅ KPI updated!", "success");
-    setTimeout(function() {
-        var msg = document.getElementById("message");
-        if (msg) msg.classList.add("hidden");
-    }, 2000);
-}
-// ==========================================================
-// PHASE 3 - CHART LAYOUT CUSTOMIZATION ENGINE
-// ==========================================================
-
-var LAYOUT_STORAGE_KEY = "datavision_chart_layout";
-
-var DEFAULT_CHART_LAYOUT = [
-    { id: "salesTrendChart",  size: "wide",   visible: true, order: 0 },
-    { id: "productChart",     size: "small",  visible: true, order: 1 },
-    { id: "categoryChart",    size: "small",  visible: true, order: 2 },
-    { id: "profitTrendChart", size: "wide",   visible: true, order: 3 },
-    { id: "orderTypeChart",   size: "small",  visible: true, order: 4 },
-    { id: "stateChart",       size: "small",  visible: true, order: 5 },
-    { id: "customerChart",    size: "wide",   visible: true, order: 6 }
-];
-
-var chartLayout = [];
-var draggedChartId = null;
-
-// Load layout from localStorage
-function loadChartLayout() {
-    try {
-        var saved = localStorage.getItem(LAYOUT_STORAGE_KEY);
-        if (saved) {
-            var parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length === DEFAULT_CHART_LAYOUT.length) {
-                chartLayout = parsed;
-                return;
-            }
-        }
-    } catch (e) {
-        console.error("Load layout error:", e);
-    }
-    chartLayout = JSON.parse(JSON.stringify(DEFAULT_CHART_LAYOUT));
-}
-
-// Save layout to localStorage
-function saveChartLayout() {
-    try {
-        localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(chartLayout));
-    } catch (e) {
-        console.error("Save layout error:", e);
-    }
-}
-
-// Apply layout to DOM
-function applyChartLayout() {
-    var grid = document.querySelector(".dashboard-grid");
-    if (!grid) return;
-
-    // Sort by order
-    var sorted = chartLayout.slice().sort(function(a, b) {
-        return a.order - b.order;
-    });
-
-    // Apply each chart's properties
-    sorted.forEach(function(cfg) {
-        var card = grid.querySelector('[data-chart-id="' + cfg.id + '"]');
-        if (!card) return;
-
-        // Size
-        card.classList.remove("size-small", "size-medium", "size-wide", "size-full");
-        card.classList.add("size-" + cfg.size);
-
-        // Visible
-        if (cfg.visible) {
-            card.classList.remove("hidden-chart");
-        } else {
-            card.classList.add("hidden-chart");
-        }
-
-        // Update size selector
-        var sizeSelector = card.querySelector(".chart-size-selector");
-        if (sizeSelector) sizeSelector.value = cfg.size;
-
-        // Reorder in DOM
-        grid.appendChild(card);
-    });
-
-    // Update hidden charts panel
-    updateHiddenChartsPanel();
-
-    // Resize all visible charts after layout change
-    setTimeout(function() {
-        window.dispatchEvent(new Event("resize"));
-    }, 100);
-}
-
-// Change chart size
-function changeChartSize(chartId, newSize) {
-    var cfg = chartLayout.find(function(c) { return c.id === chartId; });
-    if (!cfg) return;
-
-    cfg.size = newSize;
-    saveChartLayout();
-    applyChartLayout();
-
-    // Resize charts after layout change
-    setTimeout(function() {
-        window.dispatchEvent(new Event("resize"));
-    }, 150);
-}
-
-// Hide chart
-function hideChart(chartId) {
-    var cfg = chartLayout.find(function(c) { return c.id === chartId; });
-    if (!cfg) return;
-
-    cfg.visible = false;
-    saveChartLayout();
-    applyChartLayout();
-
-    showMessage("Chart hidden. Find it in the Hidden Charts panel below.", "info");
-    setTimeout(function() {
-        var msg = document.getElementById("message");
-        if (msg) msg.classList.add("hidden");
-    }, 2500);
-}
-
-// Restore chart
-function restoreChart(chartId) {
-    var cfg = chartLayout.find(function(c) { return c.id === chartId; });
-    if (!cfg) return;
-
-    cfg.visible = true;
-    saveChartLayout();
-    applyChartLayout();
-
-    showMessage("Chart restored!", "success");
-    setTimeout(function() {
-        var msg = document.getElementById("message");
-        if (msg) msg.classList.add("hidden");
-    }, 2000);
-}
-
-// Update hidden charts panel
-function updateHiddenChartsPanel() {
-    var panel = document.getElementById("hiddenChartsPanel");
-    var list = document.getElementById("hiddenChartsList");
-    if (!panel || !list) return;
-
-    var hiddenCharts = chartLayout.filter(function(c) { return !c.visible; });
-
-    if (hiddenCharts.length === 0) {
-        panel.classList.add("hidden");
-        return;
-    }
-
-    panel.classList.remove("hidden");
-    list.innerHTML = "";
-
-    var CHART_NAMES = {
-        salesTrendChart: "📈 Sales & Profit Trend",
-        productChart: "📦 Product Performance",
-        categoryChart: "📊 Category Performance",
-        profitTrendChart: "💰 Sales vs Profit",
-        orderTypeChart: "🧾 Order Type Distribution",
-        stateChart: "📍 State Performance",
-        customerChart: "👥 Top Customers"
-    };
-
-    hiddenCharts.forEach(function(cfg) {
-        var item = document.createElement("div");
-        item.className = "hidden-chart-item";
-        item.onclick = function() { restoreChart(cfg.id); };
-        item.innerHTML = '<span>' + (CHART_NAMES[cfg.id] || cfg.id) + '</span><span>↩ Restore</span>';
-        list.appendChild(item);
-    });
-}
-
-// Reset chart layout
-function resetChartLayout() {
-    if (!confirm("Reset all charts to default layout?")) return;
-
-    chartLayout = JSON.parse(JSON.stringify(DEFAULT_CHART_LAYOUT));
-    saveChartLayout();
-    applyChartLayout();
-
-    showMessage("✅ Chart layout reset to default!", "success");
-    setTimeout(function() {
-        var msg = document.getElementById("message");
-        if (msg) msg.classList.add("hidden");
-    }, 2000);
-}
-
-// ==========================================================
-// DRAG AND DROP
-// ==========================================================
-
-function initializeDragAndDrop() {
-    var grid = document.querySelector(".dashboard-grid");
-    if (!grid) return;
-
-    var cards = grid.querySelectorAll(".chart-card");
-
-    cards.forEach(function(card) {
-        // Drag start
-        card.addEventListener("dragstart", function(e) {
-            // Only allow drag from handle
-            if (!e.target.classList.contains("drag-handle") && !e.target.closest(".drag-handle")) {
-                e.preventDefault();
-                return;
-            }
-
-            draggedChartId = card.dataset.chartId;
-            card.classList.add("dragging");
-            e.dataTransfer.effectAllowed = "move";
-            e.dataTransfer.setData("text/plain", draggedChartId);
-        });
-
-        // Drag end
-        card.addEventListener("dragend", function() {
-            card.classList.remove("dragging");
-            grid.querySelectorAll(".chart-card").forEach(function(c) {
-                c.classList.remove("drag-over");
-            });
-            draggedChartId = null;
-        });
-
-        // Drag over
-        card.addEventListener("dragover", function(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-            if (card.dataset.chartId !== draggedChartId) {
-                card.classList.add("drag-over");
-            }
-        });
-
-        // Drag leave
-        card.addEventListener("dragleave", function() {
-            card.classList.remove("drag-over");
-        });
-
-        // Drop
-        card.addEventListener("drop", function(e) {
-            e.preventDefault();
-            card.classList.remove("drag-over");
-
-            var targetId = card.dataset.chartId;
-            if (!draggedChartId || draggedChartId === targetId) return;
-
-            // Swap orders
-            var sourceCfg = chartLayout.find(function(c) { return c.id === draggedChartId; });
-            var targetCfg = chartLayout.find(function(c) { return c.id === targetId; });
-
-            if (sourceCfg && targetCfg) {
-                var tempOrder = sourceCfg.order;
-                sourceCfg.order = targetCfg.order;
-                targetCfg.order = tempOrder;
-
-                saveChartLayout();
-                applyChartLayout();
-
-                showMessage("Chart moved!", "success");
-                setTimeout(function() {
-                    var msg = document.getElementById("message");
-                    if (msg) msg.classList.add("hidden");
-                }, 1500);
-            }
-        });
-    });
-}
-
-// ==========================================================
-// INITIALIZE PHASE 3
-// ==========================================================
-
-document.addEventListener("DOMContentLoaded", function() {
-    loadChartLayout();
-    initializeDragAndDrop();
-});
-// ==========================================================
-// PHASE 4 - SAVE & LOAD LAYOUTS
-// ==========================================================
-
-// Open Save Layout Modal
-function openSaveLayoutModal() {
-    if (!appState.dashboardFilename) {
-        alert("Please upload a file and build a dashboard first.");
-        return;
-    }
-
-    document.getElementById("layoutName").value = "";
-    document.getElementById("layoutDescription").value = "";
-    document.getElementById("layoutSaveMessage").className = "layout-message";
-    document.getElementById("layoutSaveMessage").style.display = "none";
-
-    document.getElementById("saveLayoutModal").classList.remove("hidden");
-}
-
-// Close Save Layout Modal
-function closeSaveLayoutModal() {
-    document.getElementById("saveLayoutModal").classList.add("hidden");
-}
-
-// Save layout to server
-async function saveLayoutNow() {
-    var name = document.getElementById("layoutName").value.trim();
-    var description = document.getElementById("layoutDescription").value.trim();
-
-    if (!name) {
-        showLayoutMessage("Please enter a layout name.", "error");
-        return;
-    }
-
-    var btn = document.getElementById("saveLayoutBtn");
-    btn.disabled = true;
-    btn.textContent = "Saving...";
-
-    try {
-        // Collect all customization data
-        var kpiData = (typeof kpiCustomization !== "undefined") ? kpiCustomization : [];
-        var chartData = (typeof chartLayout !== "undefined") ? chartLayout : [];
-        var chartPrefs = (typeof chartTypePreferences !== "undefined") ? chartTypePreferences : {};
-
-        // Get active filters
-        var activeFilters = {};
+    window.openKPIModal = openKPIModal;
+    window.closeKPIModal = closeKPIModal;
+    window.saveKPICustomization = saveKPICustomization;
+    window.resetKPICustomization = resetKPICustomization;
+    window.pickEmoji = pickEmoji;
+    window.pickColor = pickColor;
+
+    // Phase 3 - Chart Layout
+    window.changeChartSize = changeChartSize;
+    window.hideChart = hideChart;
+    window.restoreChart = restoreChart;
+    window.resetChartLayout = resetChartLayout;
+
+    // Phase 4 - Save & Load Layouts
+    window.openSaveLayoutModal = openSaveLayoutModal;
+    window.closeSaveLayoutModal = closeSaveLayoutModal;
+    window.saveLayoutNow = saveLayoutNow;
+    window.toggleLoadLayoutMenu = toggleLoadLayoutMenu;
+    window.loadLayoutsList = loadLayoutsList;
+    window.loadLayout = loadLayout;
+    window.deleteLayout = deleteLayout;
+    window.setDefaultLayout = setDefaultLayout;
+
+    // ==========================================================
+    // PHASE 2 - KPI CUSTOMIZATION ENGINE
+    // ==========================================================
+
+    var KPI_STORAGE_KEY = "datavision_kpi_customization";
+
+    var DEFAULT_KPI_CONFIG = [
+        { id: "kpi_0", title: "Total Sales",        icon: "💰", color: "#00b4d8", visible: true, highlighted: false },
+        { id: "kpi_1", title: "Total Cost",         icon: "💳", color: "#0b1f3a", visible: true, highlighted: false },
+        { id: "kpi_2", title: "Gross Profit",       icon: "📈", color: "#16a34a", visible: true, highlighted: false },
+        { id: "kpi_3", title: "Profit Margin",      icon: "🎯", color: "#f59e0b", visible: true, highlighted: false },
+        { id: "kpi_4", title: "Total Orders",       icon: "🧾", color: "#8b5cf6", visible: true, highlighted: false },
+        { id: "kpi_5", title: "Units Sold",         icon: "📦", color: "#06b6d4", visible: true, highlighted: false },
+        { id: "kpi_6", title: "Average Order Value", icon: "🛒", color: "#ec4899", visible: true, highlighted: false },
+        { id: "kpi_7", title: "Unique Customers",   icon: "👥", color: "#f97316", visible: true, highlighted: false }
+    ];
+
+    var kpiCustomization = [];
+    var currentEditingKpiIndex = null;
+
+    function loadKPICustomization() {
         try {
-            var filterIds = [
-                ["filterDateFrom", "date_from"],
-                ["filterDateTo", "date_to"],
-                ["filterProduct", "product"],
-                ["filterCategory", "category"],
-                ["filterState", "state"],
-                ["filterCity", "city"],
-                ["filterOrderType", "order_type"],
-                ["filterCustomer", "customer"]
-            ];
-            filterIds.forEach(function(pair) {
-                var el = document.getElementById(pair[0]);
-                if (el && el.value) activeFilters[pair[1]] = el.value;
-            });
-        } catch (e) {}
-
-        var payload = {
-            name: name,
-            description: description,
-            kpi_customization: kpiData,
-            chart_layout: chartData,
-            chart_preferences: chartPrefs,
-            filters: activeFilters
-        };
-
-        var response = await fetch("/dashboard/save-layout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        var data = await response.json();
-
-        if (!data.success) {
-            showLayoutMessage(data.message || "Save failed.", "error");
-            btn.disabled = false;
-            btn.textContent = "Save Layout";
-            return;
-        }
-
-        showLayoutMessage("✅ " + data.message, "success");
-
-        setTimeout(function() {
-            closeSaveLayoutModal();
-            loadLayoutsList();
-        }, 1200);
-
-    } catch (error) {
-        console.error("Save layout error:", error);
-        showLayoutMessage("Save failed: " + error.message, "error");
-        btn.disabled = false;
-        btn.textContent = "Save Layout";
-    }
-}
-
-// Helper: show layout message
-function showLayoutMessage(text, type) {
-    var msg = document.getElementById("layoutSaveMessage");
-    if (!msg) return;
-    msg.className = "layout-message " + type;
-    msg.textContent = text;
-    msg.style.display = "block";
-}
-
-// Toggle Load Layout Menu
-function toggleLoadLayoutMenu(event) {
-    if (event) event.stopPropagation();
-    var menu = document.getElementById("loadLayoutMenu");
-    if (!menu) return;
-
-    var isHidden = menu.classList.contains("hidden");
-    if (isHidden) {
-        menu.classList.remove("hidden");
-        loadLayoutsList();
-    } else {
-        menu.classList.add("hidden");
-    }
-}
-
-// Close menu on outside click
-document.addEventListener("click", function(e) {
-    var menu = document.getElementById("loadLayoutMenu");
-    if (!menu || menu.classList.contains("hidden")) return;
-
-    var dropdown = menu.closest(".load-layout-dropdown");
-    if (dropdown && !dropdown.contains(e.target)) {
-        menu.classList.add("hidden");
-    }
-});
-
-// Load list of saved layouts
-async function loadLayoutsList() {
-    var list = document.getElementById("loadLayoutList");
-    if (!list) return;
-
-    list.innerHTML = '<div class="layout-empty">Loading...</div>';
-
-    try {
-        var response = await fetch("/dashboard/layouts");
-        var data = await response.json();
-
-        if (!data.success) {
-            list.innerHTML = '<div class="layout-empty">Failed to load.</div>';
-            return;
-        }
-
-        if (!data.layouts || data.layouts.length === 0) {
-            list.innerHTML = '<div class="layout-empty">No saved layouts yet. Click "💾 Save Layout" to create one.</div>';
-            return;
-        }
-
-        list.innerHTML = "";
-
-        data.layouts.forEach(function(layout) {
-            var item = document.createElement("div");
-            item.className = "layout-item";
-
-            var date = layout.updated_at ? new Date(layout.updated_at).toLocaleDateString() : "";
-
-            item.innerHTML =
-                '<div class="layout-item-info" onclick="loadLayout(' + layout.id + ')">' +
-                    '<div class="layout-item-name">' +
-                        escapeHtml(layout.name) +
-                        (layout.is_default ? ' <span class="default-badge">DEFAULT</span>' : '') +
-                    '</div>' +
-                    (layout.description ? '<div class="layout-item-desc">' + escapeHtml(layout.description) + '</div>' : '') +
-                    '<div class="layout-item-date">' + date + '</div>' +
-                '</div>' +
-                '<div class="layout-item-actions">' +
-                    '<button class="star-btn' + (layout.is_default ? ' active' : '') + '" onclick="setDefaultLayout(' + layout.id + '); event.stopPropagation();" title="Set as default">⭐</button>' +
-                    '<button class="delete-btn" onclick="deleteLayout(' + layout.id + '); event.stopPropagation();" title="Delete">🗑️</button>' +
-                '</div>';
-
-            list.appendChild(item);
-        });
-
-    } catch (error) {
-        console.error("Load layouts list error:", error);
-        list.innerHTML = '<div class="layout-empty">Error: ' + error.message + '</div>';
-    }
-}
-
-// Load specific layout
-async function loadLayout(layoutId) {
-    try {
-        showLoading();
-
-        var response = await fetch("/dashboard/load-layout/" + layoutId);
-        var data = await response.json();
-
-        hideLoading();
-
-        if (!data.success) {
-            alert(data.message || "Failed to load layout.");
-            return;
-        }
-
-        var layout = data.layout;
-
-        // Restore KPI customization
-        if (layout.kpi_customization && Array.isArray(layout.kpi_customization)) {
-            kpiCustomization = layout.kpi_customization;
-            if (typeof saveKPICustomizationToStorage === "function") {
-                saveKPICustomizationToStorage();
-            }
-        }
-
-        // Restore chart layout
-        if (layout.chart_layout && Array.isArray(layout.chart_layout)) {
-            chartLayout = layout.chart_layout;
-            if (typeof saveChartLayout === "function") {
-                saveChartLayout();
-            }
-        }
-
-        // Restore chart type preferences
-        if (layout.chart_preferences && typeof layout.chart_preferences === "object") {
-            for (var key in layout.chart_preferences) {
-                if (chartTypePreferences.hasOwnProperty(key)) {
-                    chartTypePreferences[key] = layout.chart_preferences[key];
-
-                    // Update select dropdown
-                    var selector = document.getElementById(key + "Selector");
-                    if (selector) selector.value = layout.chart_preferences[key];
+            var saved = localStorage.getItem(KPI_STORAGE_KEY);
+            if (saved) {
+                var parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length === DEFAULT_KPI_CONFIG.length) {
+                    kpiCustomization = parsed;
+                    return;
                 }
             }
+        } catch (e) {
+            console.error("Load KPI custom error:", e);
         }
+        kpiCustomization = JSON.parse(JSON.stringify(DEFAULT_KPI_CONFIG));
+    }
 
-        // Restore filters (optional)
-        if (layout.filters) {
-            var filterMap = {
-                date_from: "filterDateFrom",
-                date_to: "filterDateTo",
-                product: "filterProduct",
-                category: "filterCategory",
-                state: "filterState",
-                city: "filterCity",
-                order_type: "filterOrderType",
-                customer: "filterCustomer"
-            };
-            for (var filterKey in layout.filters) {
-                var elId = filterMap[filterKey];
-                if (elId) {
-                    var el = document.getElementById(elId);
-                    if (el) el.value = layout.filters[filterKey];
-                }
-            }
+    function saveKPICustomizationToStorage() {
+        try {
+            localStorage.setItem(KPI_STORAGE_KEY, JSON.stringify(kpiCustomization));
+        } catch (e) {
+            console.error("Save KPI custom error:", e);
         }
+    }
 
-        // Re-render everything
+    function resetKPICustomization() {
+        if (!confirm("Reset all KPI customizations to default?")) return;
+        kpiCustomization = JSON.parse(JSON.stringify(DEFAULT_KPI_CONFIG));
+        saveKPICustomizationToStorage();
         if (appState.dashboardData) {
             renderDashboardKPIs(appState.dashboardData.kpis);
-            renderDashboard(appState.dashboardData);
         }
-
-        // Apply layout
-        setTimeout(function() {
-            if (typeof applyChartLayout === "function") {
-                applyChartLayout();
-            }
-        }, 200);
-
-        // Close menu
-        document.getElementById("loadLayoutMenu").classList.add("hidden");
-
-        showMessage("✅ Layout '" + layout.name + "' loaded!", "success");
-        setTimeout(function() {
-            var msg = document.getElementById("message");
-            if (msg) msg.classList.add("hidden");
-        }, 2500);
-
-    } catch (error) {
-        hideLoading();
-        console.error("Load layout error:", error);
-        alert("Failed to load layout: " + error.message);
-    }
-}
-
-// Delete layout
-async function deleteLayout(layoutId) {
-    if (!confirm("Delete this layout permanently?")) return;
-
-    try {
-        var response = await fetch("/dashboard/delete-layout/" + layoutId, {
-            method: "DELETE"
-        });
-        var data = await response.json();
-
-        if (!data.success) {
-            alert(data.message || "Delete failed.");
-            return;
-        }
-
-        loadLayoutsList();
-
-        showMessage("✅ Layout deleted!", "success");
+        showMessage("✅ KPI customization reset!", "success");
         setTimeout(function() {
             var msg = document.getElementById("message");
             if (msg) msg.classList.add("hidden");
         }, 2000);
-
-    } catch (error) {
-        console.error("Delete layout error:", error);
-        alert("Delete failed: " + error.message);
     }
-}
 
-// Set default layout
-async function setDefaultLayout(layoutId) {
-    try {
-        var response = await fetch("/dashboard/set-default/" + layoutId, {
-            method: "POST"
+    function openKPIModal(index) {
+        currentEditingKpiIndex = index;
+        var config = kpiCustomization[index];
+        if (!config) return;
+
+        document.getElementById("kpiEditTitle").value = config.title;
+        document.getElementById("kpiEditIcon").value = config.icon;
+        document.getElementById("kpiEditColor").value = config.color;
+        document.getElementById("kpiEditVisible").checked = config.visible !== false;
+        document.getElementById("kpiEditHighlight").checked = config.highlighted === true;
+
+        document.querySelectorAll(".kpi-color-dot").forEach(function(dot) {
+            dot.classList.remove("selected");
+            if (dot.dataset.color.toLowerCase() === config.color.toLowerCase()) {
+                dot.classList.add("selected");
+            }
         });
-        var data = await response.json();
 
-        if (!data.success) {
-            alert(data.message || "Failed.");
+        document.getElementById("kpiCustomizeModal").classList.remove("hidden");
+    }
+
+    function closeKPIModal() {
+        document.getElementById("kpiCustomizeModal").classList.add("hidden");
+        currentEditingKpiIndex = null;
+    }
+
+    function pickEmoji(emoji) {
+        document.getElementById("kpiEditIcon").value = emoji;
+    }
+
+    function pickColor(color) {
+        document.getElementById("kpiEditColor").value = color;
+        document.querySelectorAll(".kpi-color-dot").forEach(function(dot) {
+            dot.classList.remove("selected");
+            if (dot.dataset.color.toLowerCase() === color.toLowerCase()) {
+                dot.classList.add("selected");
+            }
+        });
+    }
+
+    function saveKPICustomization() {
+        if (currentEditingKpiIndex === null) return;
+
+        var title = document.getElementById("kpiEditTitle").value.trim();
+        var icon = document.getElementById("kpiEditIcon").value.trim() || "📊";
+        var color = document.getElementById("kpiEditColor").value;
+        var visible = document.getElementById("kpiEditVisible").checked;
+        var highlighted = document.getElementById("kpiEditHighlight").checked;
+
+        if (!title) {
+            alert("Please enter a title.");
             return;
         }
 
-        loadLayoutsList();
+        kpiCustomization[currentEditingKpiIndex] = {
+            id: "kpi_" + currentEditingKpiIndex,
+            title: title,
+            icon: icon,
+            color: color,
+            visible: visible,
+            highlighted: highlighted
+        };
 
-    } catch (error) {
-        console.error("Set default error:", error);
+        saveKPICustomizationToStorage();
+        closeKPIModal();
+
+        if (appState.dashboardData) {
+            renderDashboardKPIs(appState.dashboardData.kpis);
+        }
+        showMessage("✅ KPI updated!", "success");
+        setTimeout(function() {
+            var msg = document.getElementById("message");
+            if (msg) msg.classList.add("hidden");
+        }, 2000);
     }
-}
+
+    // ==========================================================
+    // PHASE 3 - CHART LAYOUT CUSTOMIZATION ENGINE
+    // ==========================================================
+
+    var LAYOUT_STORAGE_KEY = "datavision_chart_layout";
+
+    var DEFAULT_CHART_LAYOUT = [
+        { id: "salesTrendChart",  size: "wide",   visible: true, order: 0 },
+        { id: "productChart",     size: "small",  visible: true, order: 1 },
+        { id: "categoryChart",    size: "small",  visible: true, order: 2 },
+        { id: "profitTrendChart", size: "wide",   visible: true, order: 3 },
+        { id: "orderTypeChart",   size: "small",  visible: true, order: 4 },
+        { id: "stateChart",       size: "small",  visible: true, order: 5 },
+        { id: "customerChart",    size: "wide",   visible: true, order: 6 }
+    ];
+
+    var chartLayout = [];
+    var draggedChartId = null;
+
+    function loadChartLayout() {
+        try {
+            var saved = localStorage.getItem(LAYOUT_STORAGE_KEY);
+            if (saved) {
+                var parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length === DEFAULT_CHART_LAYOUT.length) {
+                    chartLayout = parsed;
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error("Load layout error:", e);
+        }
+        chartLayout = JSON.parse(JSON.stringify(DEFAULT_CHART_LAYOUT));
+    }
+
+    function saveChartLayout() {
+        try {
+            localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(chartLayout));
+        } catch (e) {
+            console.error("Save layout error:", e);
+        }
+    }
+
+    function applyChartLayout() {
+        var grid = document.querySelector(".dashboard-grid");
+        if (!grid) return;
+
+        var sorted = chartLayout.slice().sort(function(a, b) {
+            return a.order - b.order;
+        });
+
+        sorted.forEach(function(cfg) {
+            var card = grid.querySelector('[data-chart-id="' + cfg.id + '"]');
+            if (!card) return;
+
+            card.classList.remove("size-small", "size-medium", "size-wide", "size-full");
+            card.classList.add("size-" + cfg.size);
+
+            if (cfg.visible) {
+                card.classList.remove("hidden-chart");
+            } else {
+                card.classList.add("hidden-chart");
+            }
+
+            var sizeSelector = card.querySelector(".chart-size-selector");
+            if (sizeSelector) sizeSelector.value = cfg.size;
+
+            grid.appendChild(card);
+        });
+
+        updateHiddenChartsPanel();
+
+        setTimeout(function() {
+            window.dispatchEvent(new Event("resize"));
+        }, 100);
+    }
+
+    function changeChartSize(chartId, newSize) {
+        var cfg = chartLayout.find(function(c) { return c.id === chartId; });
+        if (!cfg) return;
+
+        cfg.size = newSize;
+        saveChartLayout();
+        applyChartLayout();
+
+        setTimeout(function() {
+            window.dispatchEvent(new Event("resize"));
+        }, 150);
+    }
+
+    function hideChart(chartId) {
+        var cfg = chartLayout.find(function(c) { return c.id === chartId; });
+        if (!cfg) return;
+
+        cfg.visible = false;
+        saveChartLayout();
+        applyChartLayout();
+
+        showMessage("Chart hidden. Find it in the Hidden Charts panel below.", "info");
+        setTimeout(function() {
+            var msg = document.getElementById("message");
+            if (msg) msg.classList.add("hidden");
+        }, 2500);
+    }
+
+    function restoreChart(chartId) {
+        var cfg = chartLayout.find(function(c) { return c.id === chartId; });
+        if (!cfg) return;
+
+        cfg.visible = true;
+        saveChartLayout();
+        applyChartLayout();
+
+        showMessage("Chart restored!", "success");
+        setTimeout(function() {
+            var msg = document.getElementById("message");
+            if (msg) msg.classList.add("hidden");
+        }, 2000);
+    }
+
+    function updateHiddenChartsPanel() {
+        var panel = document.getElementById("hiddenChartsPanel");
+        var list = document.getElementById("hiddenChartsList");
+        if (!panel || !list) return;
+
+        var hiddenCharts = chartLayout.filter(function(c) { return !c.visible; });
+
+        if (hiddenCharts.length === 0) {
+            panel.classList.add("hidden");
+            return;
+        }
+
+        panel.classList.remove("hidden");
+        list.innerHTML = "";
+
+        var CHART_NAMES = {
+            salesTrendChart: "📈 Sales & Profit Trend",
+            productChart: "📦 Product Performance",
+            categoryChart: "📊 Category Performance",
+            profitTrendChart: "💰 Sales vs Profit",
+            orderTypeChart: "🧾 Order Type Distribution",
+            stateChart: "📍 State Performance",
+            customerChart: "👥 Top Customers"
+        };
+
+        hiddenCharts.forEach(function(cfg) {
+            var item = document.createElement("div");
+            item.className = "hidden-chart-item";
+            item.onclick = function() { restoreChart(cfg.id); };
+            item.innerHTML = '<span>' + (CHART_NAMES[cfg.id] || cfg.id) + '</span><span>↩ Restore</span>';
+            list.appendChild(item);
+        });
+    }
+
+    function resetChartLayout() {
+        if (!confirm("Reset all charts to default layout?")) return;
+
+        chartLayout = JSON.parse(JSON.stringify(DEFAULT_CHART_LAYOUT));
+        saveChartLayout();
+        applyChartLayout();
+
+        showMessage("✅ Chart layout reset to default!", "success");
+        setTimeout(function() {
+            var msg = document.getElementById("message");
+            if (msg) msg.classList.add("hidden");
+        }, 2000);
+    }
+
+    function initializeDragAndDrop() {
+        var grid = document.querySelector(".dashboard-grid");
+        if (!grid) return;
+
+        var cards = grid.querySelectorAll(".chart-card");
+
+        cards.forEach(function(card) {
+            card.addEventListener("dragstart", function(e) {
+                if (!e.target.classList.contains("drag-handle") && !e.target.closest(".drag-handle")) {
+                    e.preventDefault();
+                    return;
+                }
+
+                draggedChartId = card.dataset.chartId;
+                card.classList.add("dragging");
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", draggedChartId);
+            });
+
+            card.addEventListener("dragend", function() {
+                card.classList.remove("dragging");
+                grid.querySelectorAll(".chart-card").forEach(function(c) {
+                    c.classList.remove("drag-over");
+                });
+                draggedChartId = null;
+            });
+
+            card.addEventListener("dragover", function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (card.dataset.chartId !== draggedChartId) {
+                    card.classList.add("drag-over");
+                }
+            });
+
+            card.addEventListener("dragleave", function() {
+                card.classList.remove("drag-over");
+            });
+
+            card.addEventListener("drop", function(e) {
+                e.preventDefault();
+                card.classList.remove("drag-over");
+
+                var targetId = card.dataset.chartId;
+                if (!draggedChartId || draggedChartId === targetId) return;
+
+                var sourceCfg = chartLayout.find(function(c) { return c.id === draggedChartId; });
+                var targetCfg = chartLayout.find(function(c) { return c.id === targetId; });
+
+                if (sourceCfg && targetCfg) {
+                    var tempOrder = sourceCfg.order;
+                    sourceCfg.order = targetCfg.order;
+                    targetCfg.order = tempOrder;
+
+                    saveChartLayout();
+                    applyChartLayout();
+
+                    showMessage("Chart moved!", "success");
+                    setTimeout(function() {
+                        var msg = document.getElementById("message");
+                        if (msg) msg.classList.add("hidden");
+                    }, 1500);
+                }
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadChartLayout();
+        initializeDragAndDrop();
+    });
+
+    // ==========================================================
+    // PHASE 4 - SAVE & LOAD LAYOUTS
+    // ==========================================================
+
+    function openSaveLayoutModal() {
+        if (!appState.dashboardFilename) {
+            alert("Please upload a file and build a dashboard first.");
+            return;
+        }
+
+        document.getElementById("layoutName").value = "";
+        document.getElementById("layoutDescription").value = "";
+        document.getElementById("layoutSaveMessage").className = "layout-message";
+        document.getElementById("layoutSaveMessage").style.display = "none";
+
+        document.getElementById("saveLayoutModal").classList.remove("hidden");
+    }
+
+    function closeSaveLayoutModal() {
+        document.getElementById("saveLayoutModal").classList.add("hidden");
+    }
+
+    async function saveLayoutNow() {
+        var name = document.getElementById("layoutName").value.trim();
+        var description = document.getElementById("layoutDescription").value.trim();
+
+        if (!name) {
+            showLayoutMessage("Please enter a layout name.", "error");
+            return;
+        }
+
+        var btn = document.getElementById("saveLayoutBtn");
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+
+        try {
+            var kpiData = (typeof kpiCustomization !== "undefined") ? kpiCustomization : [];
+            var chartData = (typeof chartLayout !== "undefined") ? chartLayout : [];
+            var chartPrefs = (typeof chartTypePreferences !== "undefined") ? chartTypePreferences : {};
+
+            var activeFilters = {};
+            try {
+                var filterIds = [
+                    ["filterDateFrom", "date_from"],
+                    ["filterDateTo", "date_to"],
+                    ["filterProduct", "product"],
+                    ["filterCategory", "category"],
+                    ["filterState", "state"],
+                    ["filterCity", "city"],
+                    ["filterOrderType", "order_type"],
+                    ["filterCustomer", "customer"]
+                ];
+                filterIds.forEach(function(pair) {
+                    var el = document.getElementById(pair[0]);
+                    if (el && el.value) activeFilters[pair[1]] = el.value;
+                });
+            } catch (e) {}
+
+            var payload = {
+                name: name,
+                description: description,
+                kpi_customization: kpiData,
+                chart_layout: chartData,
+                chart_preferences: chartPrefs,
+                filters: activeFilters
+            };
+
+            var response = await fetch("/dashboard/save-layout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            var data = await response.json();
+
+            if (!data.success) {
+                showLayoutMessage(data.message || "Save failed.", "error");
+                btn.disabled = false;
+                btn.textContent = "Save Layout";
+                return;
+            }
+
+            showLayoutMessage("✅ " + data.message, "success");
+
+            setTimeout(function() {
+                closeSaveLayoutModal();
+                loadLayoutsList();
+            }, 1200);
+
+        } catch (error) {
+            console.error("Save layout error:", error);
+            showLayoutMessage("Save failed: " + error.message, "error");
+            btn.disabled = false;
+            btn.textContent = "Save Layout";
+        }
+    }
+
+    function showLayoutMessage(text, type) {
+        var msg = document.getElementById("layoutSaveMessage");
+        if (!msg) return;
+        msg.className = "layout-message " + type;
+        msg.textContent = text;
+        msg.style.display = "block";
+    }
+
+    function toggleLoadLayoutMenu(event) {
+        if (event) event.stopPropagation();
+        var menu = document.getElementById("loadLayoutMenu");
+        if (!menu) return;
+
+        var isHidden = menu.classList.contains("hidden");
+        if (isHidden) {
+            menu.classList.remove("hidden");
+            loadLayoutsList();
+        } else {
+            menu.classList.add("hidden");
+        }
+    }
+
+    document.addEventListener("click", function(e) {
+        var menu = document.getElementById("loadLayoutMenu");
+        if (!menu || menu.classList.contains("hidden")) return;
+
+        var dropdown = menu.closest(".load-layout-dropdown");
+        if (dropdown && !dropdown.contains(e.target)) {
+            menu.classList.add("hidden");
+        }
+    });
+
+    async function loadLayoutsList() {
+        var list = document.getElementById("loadLayoutList");
+        if (!list) return;
+
+        list.innerHTML = '<div class="layout-empty">Loading...</div>';
+
+        try {
+            var response = await fetch("/dashboard/layouts");
+            var data = await response.json();
+
+            if (!data.success) {
+                list.innerHTML = '<div class="layout-empty">Failed to load.</div>';
+                return;
+            }
+
+            if (!data.layouts || data.layouts.length === 0) {
+                list.innerHTML = '<div class="layout-empty">No saved layouts yet. Click "💾 Save Layout" to create one.</div>';
+                return;
+            }
+
+            list.innerHTML = "";
+
+            data.layouts.forEach(function(layout) {
+                var item = document.createElement("div");
+                item.className = "layout-item";
+
+                var date = layout.updated_at ? new Date(layout.updated_at).toLocaleDateString() : "";
+
+                item.innerHTML =
+                    '<div class="layout-item-info" onclick="loadLayout(' + layout.id + ')">' +
+                        '<div class="layout-item-name">' +
+                            escapeHtml(layout.name) +
+                            (layout.is_default ? ' <span class="default-badge">DEFAULT</span>' : '') +
+                        '</div>' +
+                        (layout.description ? '<div class="layout-item-desc">' + escapeHtml(layout.description) + '</div>' : '') +
+                        '<div class="layout-item-date">' + date + '</div>' +
+                    '</div>' +
+                    '<div class="layout-item-actions">' +
+                        '<button class="star-btn' + (layout.is_default ? ' active' : '') + '" onclick="setDefaultLayout(' + layout.id + '); event.stopPropagation();" title="Set as default">⭐</button>' +
+                        '<button class="delete-btn" onclick="deleteLayout(' + layout.id + '); event.stopPropagation();" title="Delete">🗑️</button>' +
+                    '</div>';
+
+                list.appendChild(item);
+            });
+
+        } catch (error) {
+            console.error("Load layouts list error:", error);
+            list.innerHTML = '<div class="layout-empty">Error: ' + error.message + '</div>';
+        }
+    }
+
+    async function loadLayout(layoutId) {
+        try {
+            showLoading();
+
+            var response = await fetch("/dashboard/load-layout/" + layoutId);
+            var data = await response.json();
+
+            hideLoading();
+
+            if (!data.success) {
+                alert(data.message || "Failed to load layout.");
+                return;
+            }
+
+            var layout = data.layout;
+
+            if (layout.kpi_customization && Array.isArray(layout.kpi_customization)) {
+                kpiCustomization = layout.kpi_customization;
+                if (typeof saveKPICustomizationToStorage === "function") {
+                    saveKPICustomizationToStorage();
+                }
+            }
+
+            if (layout.chart_layout && Array.isArray(layout.chart_layout)) {
+                chartLayout = layout.chart_layout;
+                if (typeof saveChartLayout === "function") {
+                    saveChartLayout();
+                }
+            }
+
+            if (layout.chart_preferences && typeof layout.chart_preferences === "object") {
+                for (var key in layout.chart_preferences) {
+                    if (chartTypePreferences.hasOwnProperty(key)) {
+                        chartTypePreferences[key] = layout.chart_preferences[key];
+
+                        var selector = document.getElementById(key + "Selector");
+                        if (selector) selector.value = layout.chart_preferences[key];
+                    }
+                }
+            }
+
+            if (layout.filters) {
+                var filterMap = {
+                    date_from: "filterDateFrom",
+                    date_to: "filterDateTo",
+                    product: "filterProduct",
+                    category: "filterCategory",
+                    state: "filterState",
+                    city: "filterCity",
+                    order_type: "filterOrderType",
+                    customer: "filterCustomer"
+                };
+                for (var filterKey in layout.filters) {
+                    var elId = filterMap[filterKey];
+                    if (elId) {
+                        var el = document.getElementById(elId);
+                        if (el) el.value = layout.filters[filterKey];
+                    }
+                }
+            }
+
+            if (appState.dashboardData) {
+                renderDashboardKPIs(appState.dashboardData.kpis);
+                renderDashboard(appState.dashboardData);
+            }
+
+            setTimeout(function() {
+                if (typeof applyChartLayout === "function") {
+                    applyChartLayout();
+                }
+            }, 200);
+
+            document.getElementById("loadLayoutMenu").classList.add("hidden");
+
+            showMessage("✅ Layout '" + layout.name + "' loaded!", "success");
+            setTimeout(function() {
+                var msg = document.getElementById("message");
+                if (msg) msg.classList.add("hidden");
+            }, 2500);
+
+        } catch (error) {
+            hideLoading();
+            console.error("Load layout error:", error);
+            alert("Failed to load layout: " + error.message);
+        }
+    }
+
+    async function deleteLayout(layoutId) {
+        if (!confirm("Delete this layout permanently?")) return;
+
+        try {
+            var response = await fetch("/dashboard/delete-layout/" + layoutId, {
+                method: "DELETE"
+            });
+            var data = await response.json();
+
+            if (!data.success) {
+                alert(data.message || "Delete failed.");
+                return;
+            }
+
+            loadLayoutsList();
+
+            showMessage("✅ Layout deleted!", "success");
+            setTimeout(function() {
+                var msg = document.getElementById("message");
+                if (msg) msg.classList.add("hidden");
+            }, 2000);
+
+        } catch (error) {
+            console.error("Delete layout error:", error);
+            alert("Delete failed: " + error.message);
+        }
+    }
+
+    async function setDefaultLayout(layoutId) {
+        try {
+            var response = await fetch("/dashboard/set-default/" + layoutId, {
+                method: "POST"
+            });
+            var data = await response.json();
+
+            if (!data.success) {
+                alert(data.message || "Failed.");
+                return;
+            }
+
+            loadLayoutsList();
+
+        } catch (error) {
+            console.error("Set default error:", error);
+        }
+    }
+
 })();
+
 // ==========================================================
 // AUTH STATE CHECK (Header Buttons)
 // ==========================================================
@@ -3042,12 +2779,10 @@ async function checkAuthState() {
         var userName = document.getElementById("userName");
 
         if (data.authenticated && data.user) {
-            // User logged in
             if (authButtons) authButtons.classList.add("hidden");
             if (userInfo) userInfo.classList.remove("hidden");
             if (userName) userName.textContent = data.user.full_name || "User";
         } else {
-            // User not logged in
             if (authButtons) authButtons.classList.remove("hidden");
             if (userInfo) userInfo.classList.add("hidden");
         }

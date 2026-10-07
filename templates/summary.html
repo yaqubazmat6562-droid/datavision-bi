@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Summary - DATAVISION BI</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2300b4d8'/><text x='50' y='68' font-size='60' font-weight='bold' fill='white' text-anchor='middle' font-family='Arial'>DV</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/summary.css') }}">
+</head>
+<body class="summary-page">
+
+    <!-- Loading -->
+    <div id="summaryLoading" class="summary-loading">
+        <div class="summary-loader"></div>
+        <p>Generating smart summary...</p>
+        <span id="summaryLoadingMsg">Analyzing your data</span>
+    </div>
+
+    <!-- Main Content -->
+    <div id="summaryContainer" class="summary-container" style="display:none;">
+
+        <!-- Header -->
+        <header class="summary-header">
+            <div class="summary-brand">
+                <span class="summary-logo">📋</span>
+                <div>
+                    <h1>Smart Summary</h1>
+                    <p id="summaryFilename">{{ filename }}</p>
+                </div>
+            </div>
+
+            <div class="summary-actions">
+                <button onclick="downloadSummaryPDF()" class="summary-btn primary">📥 Download PDF</button>
+                <button onclick="window.print()" class="summary-btn">🖨️ Print</button>
+                <button onclick="window.close()" class="summary-btn danger">✕ Close</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="summary-main">
+
+            <!-- Overview Section -->
+            <section class="summary-section">
+                <h2 class="summary-section-title">📊 Data Overview</h2>
+                <div id="summaryOverview" class="summary-stats-grid"></div>
+            </section>
+
+            <!-- KPI Section -->
+            <section class="summary-section">
+                <h2 class="summary-section-title">💰 Key Performance Indicators</h2>
+                <div id="summaryKPIs" class="summary-kpi-grid"></div>
+            </section>
+
+            <!-- Insights Section -->
+            <section class="summary-section" id="insightsSection">
+                <h2 class="summary-section-title">💡 Business Insights</h2>
+                <div id="summaryInsights" class="summary-insights-list"></div>
+            </section>
+
+            <!-- Warnings Section -->
+            <section class="summary-section" id="warningsSection">
+                <h2 class="summary-section-title">⚠️ Warnings & Data Quality</h2>
+                <div id="summaryWarnings" class="summary-warnings-list"></div>
+            </section>
+
+            <!-- Recommendations Section -->
+            <section class="summary-section" id="recommendationsSection">
+                <h2 class="summary-section-title">✅ Recommendations</h2>
+                <div id="summaryRecommendations" class="summary-recommendations-list"></div>
+            </section>
+
+            <!-- Top Performers -->
+            <section class="summary-section" id="topPerformersSection">
+                <h2 class="summary-section-title">🏆 Top Performers</h2>
+                <div id="summaryTopPerformers" class="summary-performers-grid"></div>
+            </section>
+
+            <!-- Data Quality Score -->
+            <section class="summary-section">
+                <h2 class="summary-section-title">🎯 Data Quality Score</h2>
+                <div id="summaryQualityScore" class="summary-quality-box"></div>
+            </section>
+
+        </main>
+
+        <footer class="summary-footer">
+            <span>DATAVISION BI © 2026</span>
+            <span id="summaryLastUpdated">Generated: --</span>
+        </footer>
+    </div>
+
+    <!-- html2pdf for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        window.SUMMARY_FILENAME = "{{ filename }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/summary.js') }}"></script>
+
+</body>
+</html>
