@@ -396,7 +396,209 @@
             }
         };
     }
+         // ============================================
+    // PREVIEW CLEANING (DRY RUN)
+    // ============================================
+    async function previewCleaning() {
+        if (!cleanData) return;
 
+        // Collect selected options
+        var options = {};
+        OPTION_KEYS.forEach(function(key) {
+            var cb = document.getElementById("opt_" + key);
+            options[key] = cb ? cb.checked : false;
+        });
+
+        var selectedCount = Object.keys(options).filter(function(k) { return options[k]; }).length;
+        if (selectedCount === 0) {
+            alert("Please select at least one cleaning option.");
+            return;
+        }
+
+        // Show loading
+        var btn = event && event.target;
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = "⏳ Previewing...";
+        }
+
+        try {
+            var response = await fetch("/api/clean-preview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    filename: window.CLEAN_FILENAME,
+                    options: options
+                })
+            });
+
+            var data = await response.json();
+
+            if (!data.success) {
+                alert("Preview failed: " + (data.message || "Unknown error"));
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "👁️ Preview Cleaning";
+                }
+                return;
+            }
+
+            renderPreview(data);
+
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = "👁️ Preview Cleaning";
+            }
+
+            // Scroll to preview
+            setTimeout(function() {
+                document.getElementById("previewSection").scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 200);
+
+        } catch (error) {
+            console.error("Preview error:", error);
+            alert("Preview failed: " + error.message);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = "👁️ Preview Cleaning";
+            }
+        }
+    }
+
+    // ============================================
+    // RENDER PREVIEW
+    // ============================================
+    function renderPreview(data) {
+        var section = document.getElementById("previewSection");
+        section.style.display = "block";
+
+        // Before stats
+        document.getElementById("baBeforeRows").textContent = formatNumber(data.before.rows);
+        document.getElementById("baBeforeCols").textContent = formatNumber(data.before.columns);
+        document.getElementById("baBeforeMissing").textContent = formatNumber(data.before.missing);
+        document.getElementById("baBeforeDup").textContent = formatNumber(data.before.duplicates);
+
+        // After stats
+        document.getElementById("baAfterRows").textContent = formatNumber(data.after.rows);
+        document.getElementById("baAfterCols").textContent = formatNumber(data.after.columns);
+        document.getElementById("baAfterMissing").textContent = formatNumber(data.after.missing);
+        document.getElementById("baAfterDup").textContent = formatNumber(data.after.duplicates);
+
+        // Deltas
+        setDelta("baAfterRowsDelta", data.before.rows, data.after.rows, true);
+        setDelta("baAfterColsDelta", data.before.columns, data.after.columns, true);
+        setDelta("baAfterMissingDelta", data.before.missing, data.after.missing, true);
+        setDelta("baAfterDupDelta", data.before.duplicates, data.after.duplicates, true);
+
+        // Log
+        renderCleaningLog(data.log || []);
+
+        // Preview table
+        renderPreviewTable(data.preview || [], data.columns || []);
+
+        // Store preview data globally for Apply
+        window.__cleanPreviewData = data;
+    }
+
+    function setDelta(elementId, before, after, lowerIsBetter) {
+        var el = document.getElementById(elementId);
+        if (!el) return;
+
+        var delta = after - before;
+        if (delta === 0) {
+            el.textContent = "no change";
+            el.className = "delta-neutral";
+            return;
+        }
+
+        var isGood = lowerIsBetter ? (delta < 0) : (delta > 0);
+        var symbol = delta > 0 ? "+" : "";
+        el.textContent = symbol + formatNumber(delta);
+        el.className = isGood ? "delta-good" : "delta-bad";
+    }
+
+    // ============================================
+    // RENDER CLEANING LOG
+    // ============================================
+    function renderCleaningLog(log) {
+        var container = document.getElementById("cleanLogList");
+        if (!container) return;
+
+        if (!log || log.length === 0) {
+            container.innerHTML = '<div class="clean-log-item empty">No changes applied</div>';
+            return;
+        }
+
+        container.innerHTML = log.map(function(item) {
+            var badge = "";
+            if (item.changed !== undefined && item.changed > 0) {
+                badge = '<span class="clean-log-badge">' + formatNumber(item.changed) + ' changed</span>';
+            } else if (item.removed !== undefined && item.removed > 0) {
+                badge = '<span class="clean-log-badge">' + formatNumber(item.removed) + ' removed</span>';
+            } else {
+                badge = '<span class="clean-log-badge gray">no change</span>';
+            }
+
+            return '<div class="clean-log-item' + (item.changed === 0 && item.removed === 0 ? ' empty' : '') + '">' +
+                '<span class="clean-log-icon">' + (item.icon || "✅") + '</span>' +
+                '<div class="clean-log-body">' +
+                    '<div class="clean-log-step">' + escapeHtml(item.step) + '</div>' +
+                    '<div class="clean-log-detail">' + escapeHtml(item.detail) + '</div>' +
+                '</div>' +
+                badge +
+                '</div>';
+        }).join("");
+    }
+
+    // ============================================
+    // RENDER PREVIEW TABLE
+    // ============================================
+    function renderPreviewTable(preview, columns) {
+        var container = document.getElementById("cleanPreviewTable");
+        var count = document.getElementById("cleanPreviewCount");
+        if (!container) return;
+
+        if (!preview || preview.length === 0) {
+            container.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">No data to preview</div>';
+            return;
+        }
+
+        if (count) {
+            count.textContent = "(" + preview.length + " rows shown)";
+        }
+
+        var html = '<table class="clean-table"><thead><tr>';
+        columns.forEach(function(col) {
+            html += '<th>' + escapeHtml(col) + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+
+        preview.forEach(function(row) {
+            html += '<tr>';
+            columns.forEach(function(col) {
+                var val = row[col];
+                html += '<td>' + escapeHtml(val !== undefined && val !== null ? val : "") + '</td>';
+            });
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    // ============================================
+    // HIDE PREVIEW
+    // ============================================
+    function hidePreview() {
+        document.getElementById("previewSection").style.display = "none";
+    }
+
+    // ============================================
+    // APPLY CLEANING (will be fully done in Chunk 4)
+    // ============================================
+    function applyCleaning() {
+        alert("✅ Clean data ready! Download feature coming in Chunk 4.");
+    }
     // ============================================
     // FILTER COLUMNS
     // ============================================
@@ -466,5 +668,8 @@
     window.selectSafeOptions = selectSafeOptions;
     window.selectAllOptions = selectAllOptions;
     window.clearAllOptions = clearAllOptions;
+    window.previewCleaning = previewCleaning;
+    window.hidePreview = hidePreview;
+    window.applyCleaning = applyCleaning;
 
 })();

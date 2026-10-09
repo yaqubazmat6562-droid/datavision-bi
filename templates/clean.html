@@ -257,6 +257,7 @@
         </div>
         <div class="clean-summary-actions">
             <span class="clean-options-count" id="cleanOptionsCount">0 selected</span>
+            <button class="clean-btn-primary" onclick="previewCleaning()">👁️ Preview Cleaning</button>
         </div>
     </div>
 
@@ -276,6 +277,58 @@
             <div class="clean-impact-value" id="impactCellsChange">0</div>
             <div class="clean-impact-sub" id="impactCellsChangePct">0%</div>
         </div>
+    </div>
+</section>
+<!-- Preview Section -->
+<section class="clean-section" id="previewSection" style="display:none;">
+    <div class="clean-section-header">
+        <div>
+            <h2 class="clean-section-title" style="margin-bottom:0;border:none;padding:0;">👁️ Preview Cleaning Results</h2>
+            <p style="font-size:12px;color:#64748b;margin-top:4px;">See what will change before applying</p>
+        </div>
+        <div class="clean-preview-actions">
+            <button class="clean-btn-small" onclick="hidePreview()">✕ Hide</button>
+            <button class="clean-btn-small primary" onclick="applyCleaning()">✅ Apply & Clean</button>
+        </div>
+    </div>
+
+    <!-- Before / After Stats -->
+    <div class="clean-before-after">
+        <div class="clean-ba-card before">
+            <div class="clean-ba-label">BEFORE</div>
+            <div class="clean-ba-stats">
+                <div><span>Rows:</span> <strong id="baBeforeRows">0</strong></div>
+                <div><span>Columns:</span> <strong id="baBeforeCols">0</strong></div>
+                <div><span>Missing:</span> <strong id="baBeforeMissing">0</strong></div>
+                <div><span>Duplicates:</span> <strong id="baBeforeDup">0</strong></div>
+            </div>
+        </div>
+
+        <div class="clean-ba-arrow">→</div>
+
+        <div class="clean-ba-card after">
+            <div class="clean-ba-label">AFTER</div>
+            <div class="clean-ba-stats">
+                <div><span>Rows:</span> <strong id="baAfterRows">0</strong> <small id="baAfterRowsDelta"></small></div>
+                <div><span>Columns:</span> <strong id="baAfterCols">0</strong> <small id="baAfterColsDelta"></small></div>
+                <div><span>Missing:</span> <strong id="baAfterMissing">0</strong> <small id="baAfterMissingDelta"></small></div>
+                <div><span>Duplicates:</span> <strong id="baAfterDup">0</strong> <small id="baAfterDupDelta"></small></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cleaning Log -->
+    <div class="clean-log-section">
+        <h3 class="clean-log-title">📋 Cleaning Log</h3>
+        <div id="cleanLogList" class="clean-log-list"></div>
+    </div>
+
+    <!-- Cleaned Data Preview -->
+    <div class="clean-preview-table-section">
+        <div class="clean-preview-table-header">
+            <h3 class="clean-log-title">📊 Cleaned Data Preview <span id="cleanPreviewCount"></span></h3>
+        </div>
+        <div id="cleanPreviewTable" class="clean-table-container"></div>
     </div>
 </section>
 
