@@ -90,6 +90,7 @@
         renderOverview();
         renderQualityScore();
         renderColumnProfiles();
+        renderColumnCleaningGrid();
         attachOptionListeners();
     }
 
@@ -196,7 +197,330 @@
         html += '</tbody></table>';
         container.innerHTML = html;
     }
+        // ============================================
+    // COLUMN-WISE CLEANING
+    // ============================================
 
+    // Available cleaning actions per column type
+    var COLUMN_ACTIONS = {
+        numeric: [
+            { key: "parse_numeric", label: "🔢 Convert to number" },
+            { key: "fill_missing_num", label: "🩹 Fill missing (median)" },
+            { key: "remove_negatives_col", label: "➖ Remove negatives" },
+            { key: "remove_outliers_col", label: "📊 Remove outliers (IQR)" }
+        ],
+        text: [
+            { key: "trim_whitespace_col", label: "✂️ Trim whitespace" },
+            { key: "lowercase_col", label: "🔡 Lowercase" },
+            { key: "uppercase_col", label: "🔠 Uppercase" },
+            { key: "fill_missing_text", label: "🩹 Fill missing (mode)" }
+        ],
+        date: [
+            { key: "parse_date_col", label: "📅 Parse as date" },
+            { key: "fill_missing_date", label: "🩹 Fill missing (forward-fill)" }
+        ]
+    };
+
+    // Store selected actions per column
+    var columnActions = {};
+
+    // ============================================
+    // RENDER COLUMN CLEANING GRID
+    // ============================================
+    function renderColumnCleaningGrid() {
+        var container = document.getElementById("columnCleaningGrid");
+        if (!container || !cleanData) return;
+
+        var profiles = cleanData.column_profiles || [];
+        container.innerHTML = "";
+        columnActions = {};
+
+        profiles.forEach(function(p) {
+            var actions = COLUMN_ACTIONS[p.type] || [];
+            if (actions.length === 0) return;
+
+            columnActions[p.name] = {
+                type: p.type,
+                selected: false,
+                actions: {}
+            };
+
+            // Initialize all actions to false
+            actions.forEach(function(a) {
+                columnActions[p.name].actions[a.key] = false;
+            });
+
+            var card = document.createElement("div");
+            card.className = "column-card";
+            card.dataset.column = p.name;
+
+            var typeClass = "type-" + p.type;
+            var typeLabel = p.type;
+
+            var actionsHTML = "";
+            actions.forEach(function(a) {
+                actionsHTML +=
+                    '<div class="column-action-row">' +
+                        '<input type="checkbox" id="ca_' + encodeURIComponent(p.name) + '_' + a.key + '" data-column="' + escapeHtml(p.name) + '" data-action="' + a.key + '">' +
+                        '<label for="ca_' + encodeURIComponent(p.name) + '_' + a.key + '">' + a.label + '</label>' +
+                    '</div>';
+            });
+
+            card.innerHTML =
+                '<div class="column-card-header">' +
+                    '<input type="checkbox" class="column-card-check" data-column="' + escapeHtml(p.name) + '">' +
+                    '<div class="column-card-name" title="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + '</div>' +
+                    '<span class="type-badge ' + typeClass + ' column-card-type">' + typeLabel + '</span>' +
+                '</div>' +
+                '<div class="column-card-actions">' +
+                    actionsHTML +
+                '</div>' +
+                '<div class="column-type-note">' +
+                    'Missing: ' + p.missing + ' (' + p.missing_pct.toFixed(1) + '%) · Unique: ' + p.unique +
+                '</div>';
+
+            container.appendChild(card);
+        });
+
+        // Attach event listeners
+        attachColumnActionListeners();
+        updateColumnSummary();
+    }
+
+    function attachColumnActionListeners() {
+        // Column selection checkbox
+        document.querySelectorAll(".column-card-check").forEach(function(cb) {
+            cb.addEventListener("change", function() {
+                var column = this.dataset.column;
+                var card = this.closest(".column-card");
+
+                if (this.checked) {
+                    card.classList.add("selected");
+                    columnActions[column].selected = true;
+                } else {
+                    card.classList.remove("selected");
+                    columnActions[column].selected = false;
+                    // Uncheck all actions
+                    document.querySelectorAll('.column-card[data-column="' + CSS.escape(column) + '"] .column-card-actions input[type="checkbox"]').forEach(function(ac) {
+                        ac.checked = false;
+                        columnActions[column].actions[ac.dataset.action] = false;
+                    });
+                }
+                updateColumnSummary();
+            });
+        });
+
+        // Action checkboxes
+        document.querySelectorAll(".column-card-actions input[type='checkbox']").forEach(function(cb) {
+            cb.addEventListener("change", function() {
+                var column = this.dataset.column;
+                var action = this.dataset.action;
+
+                if (!columnActions[column]) return;
+
+                columnActions[column].actions[action] = this.checked;
+
+                // Auto-select the column if any action is checked
+                if (this.checked) {
+                    var card = this.closest(".column-card");
+                    var mainCheck = card.querySelector(".column-card-check");
+                    if (!mainCheck.checked) {
+                        mainCheck.checked = true;
+                        card.classList.add("selected");
+                        columnActions[column].selected = true;
+                    }
+                }
+
+                updateColumnSummary();
+            });
+        });
+    }
+
+    // ============================================
+    // UPDATE COLUMN SUMMARY
+    // ============================================
+    function updateColumnSummary() {
+        var summary = document.getElementById("columnCleaningSummary");
+        if (!summary) return;
+
+        var selectedCols = 0;
+        var totalActions = 0;
+
+        Object.keys(columnActions).forEach(function(col) {
+            var cfg = columnActions[col];
+            if (cfg.selected) {
+                selectedCols++;
+                Object.keys(cfg.actions).forEach(function(k) {
+                    if (cfg.actions[k]) totalActions++;
+                });
+            }
+        });
+
+        if (selectedCols === 0) {
+            summary.style.display = "none";
+            return;
+        }
+
+        summary.style.display = "flex";
+        document.getElementById("columnSummaryTitle").textContent =
+            selectedCols + " column(s) selected";
+        document.getElementById("columnSummaryDesc").textContent =
+            totalActions + " cleaning action(s) will be applied";
+    }
+
+    // ============================================
+    // SELECT ALL / NONE
+    // ============================================
+    function selectAllColumns() {
+        document.querySelectorAll(".column-card-check").forEach(function(cb) {
+            cb.checked = true;
+            cb.dispatchEvent(new Event("change"));
+        });
+        document.querySelectorAll(".column-card-actions input[type='checkbox']").forEach(function(cb) {
+            cb.checked = true;
+            cb.dispatchEvent(new Event("change"));
+        });
+    }
+
+    function selectNoColumns() {
+        document.querySelectorAll(".column-card-check").forEach(function(cb) {
+            cb.checked = false;
+            cb.dispatchEvent(new Event("change"));
+        });
+        document.querySelectorAll(".column-card-actions input[type='checkbox']").forEach(function(cb) {
+            cb.checked = false;
+        });
+
+        // Reset columnActions
+        Object.keys(columnActions).forEach(function(col) {
+            columnActions[col].selected = false;
+            Object.keys(columnActions[col].actions).forEach(function(k) {
+                columnActions[col].actions[k] = false;
+            });
+        });
+
+        updateColumnSummary();
+    }
+
+    // ============================================
+    // APPLY COLUMN CLEANING
+    // ============================================
+    async function applyColumnCleaning() {
+        if (!cleanData) return;
+
+        // Build column options
+        var columnOptions = {};
+        var totalSelected = 0;
+
+        Object.keys(columnActions).forEach(function(col) {
+            var cfg = columnActions[col];
+            if (!cfg.selected) return;
+
+            var activeActions = Object.keys(cfg.actions).filter(function(k) { return cfg.actions[k]; });
+            if (activeActions.length === 0) return;
+
+            columnOptions[col] = activeActions;
+            totalSelected++;
+        });
+
+        if (totalSelected === 0) {
+            alert("Please select at least one column and one action.");
+            return;
+        }
+
+        var btn = event && event.target;
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = "⏳ Applying...";
+        }
+
+        try {
+            var response = await fetch("/api/clean-column", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    filename: window.CLEAN_FILENAME,
+                    column_options: columnOptions
+                })
+            });
+
+            var data = await response.json();
+
+            if (!data.success) {
+                alert("Column cleaning failed: " + (data.message || "Unknown error"));
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "✅ Apply Column Cleaning";
+                }
+                return;
+            }
+
+            // Store for download
+            window.__cleanedFile = data;
+
+            // Show result modal
+            renderColumnResultModal(data);
+            document.getElementById("cleanResultModal").classList.remove("hidden");
+
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = "✅ Apply Column Cleaning";
+            }
+
+        } catch (error) {
+            console.error("Apply column cleaning error:", error);
+            alert("Failed: " + error.message);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = "✅ Apply Column Cleaning";
+            }
+        }
+    }
+
+    // ============================================
+    // RENDER COLUMN RESULT MODAL
+    // ============================================
+    function renderColumnResultModal(data) {
+        document.getElementById("resultRows").textContent =
+            formatNumber(data.original_rows) + " → " + formatNumber(data.cleaned_rows);
+        document.getElementById("resultCols").textContent =
+            formatNumber(data.original_columns) + " → " + formatNumber(data.cleaned_columns);
+
+        var totalChanges = 0;
+        (data.log || []).forEach(function(item) {
+            if (item.changed) totalChanges += item.changed;
+            if (item.removed) totalChanges += item.removed;
+        });
+        document.getElementById("resultChanges").textContent = formatNumber(totalChanges);
+
+        document.getElementById("resultFilename").textContent = data.cleaned_filename;
+
+        var ext = data.cleaned_filename.split(".").pop().toUpperCase();
+        document.getElementById("downloadFileFormat").textContent = ext;
+
+        // Show log in modal
+        var logHTML = '<div class="clean-log-list" style="max-height:200px;overflow-y:auto;">';
+        (data.log || []).forEach(function(item) {
+            var badge = "";
+            if (item.changed !== undefined) {
+                badge = '<span class="clean-log-badge">' + formatNumber(item.changed) + ' changed</span>';
+            } else if (item.removed !== undefined) {
+                badge = '<span class="clean-log-badge">' + formatNumber(item.removed) + ' removed</span>';
+            } else {
+                badge = '<span class="clean-log-badge gray">-</span>';
+            }
+            logHTML += '<div class="clean-log-item">' +
+                '<span class="clean-log-icon">' + (item.icon || "✅") + '</span>' +
+                '<div class="clean-log-body">' +
+                    '<div class="clean-log-step">' + escapeHtml(item.step) + '</div>' +
+                    '<div class="clean-log-detail">' + escapeHtml(item.detail) + '</div>' +
+                '</div>' +
+                badge +
+                '</div>';
+        });
+        logHTML += '</div>';
+        document.getElementById("cleanResultPreviewTable").innerHTML = logHTML;
+    }
     // ============================================
     // ATTACH OPTION LISTENERS
     // ============================================
@@ -802,5 +1126,8 @@
     window.closeCleanResultModal = closeCleanResultModal;
     window.downloadCleanedFile = downloadCleanedFile;
     window.useCleanedFile = useCleanedFile;
+    window.selectAllColumns = selectAllColumns;
+    window.selectNoColumns = selectNoColumns;
+    window.applyColumnCleaning = applyColumnCleaning;
 
 })();

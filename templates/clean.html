@@ -64,7 +64,34 @@
                 </div>
                 <div id="cleanColumnProfiles" class="clean-table-container"></div>
             </section>
+             <!-- Column-wise Cleaning -->
+<section class="clean-section" id="columnCleaningSection">
+    <div class="clean-section-header">
+        <div>
+            <h2 class="clean-section-title" style="margin-bottom:0;border:none;padding:0;">🎯 Column-wise Cleaning</h2>
+            <p style="font-size:12px;color:#64748b;margin-top:4px;">Select specific columns and choose what to clean in each</p>
+        </div>
+        <div class="clean-column-actions">
+            <button class="clean-btn-small" onclick="selectAllColumns()">✔️ Select All</button>
+            <button class="clean-btn-small" onclick="selectNoColumns()">✖ Clear All</button>
+            <button class="clean-btn-small primary" onclick="applyColumnCleaning()">✅ Apply Column Cleaning</button>
+        </div>
+    </div>
 
+    <!-- Column Selection Grid -->
+    <div id="columnCleaningGrid" class="column-cleaning-grid">
+        <!-- Will be populated by JS -->
+    </div>
+
+    <!-- Column Cleaning Summary -->
+    <div class="column-cleaning-summary" id="columnCleaningSummary" style="display:none;">
+        <div class="column-summary-icon">📊</div>
+        <div class="column-summary-text">
+            <strong id="columnSummaryTitle">0 columns selected</strong>
+            <span id="columnSummaryDesc">Select cleaning actions for each column below</span>
+        </div>
+    </div>
+</section>
             <!-- Cleaning Options -->
 <section class="clean-section">
     <div class="clean-section-header">

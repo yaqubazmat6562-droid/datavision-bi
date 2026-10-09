@@ -579,3 +579,251 @@ def api_clean_download(filename):
 
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+        # ==========================================================
+# APPLY COLUMN-WISE CLEANING
+# ==========================================================
+@clean_bp.route("/api/clean-column", methods=["POST"])
+def api_clean_column():
+    """
+    Apply cleaning to specific columns only.
+    Each column can have different cleaning actions.
+    """
+    try:
+        import pandas as pd
+        import numpy as np
+        from datetime import datetime
+        from utils.helpers import load_file_dataframe
+        from utils.validators import validate_file_exists
+
+        data = request.get_json(silent=True) or {}
+        filename = data.get("filename")
+        column_options = data.get("column_options", {})
+
+        if not filename:
+            return jsonify({"success": False, "message": "Filename required."}), 400
+
+        if not column_options:
+            return jsonify({"success": False, "message": "No columns selected."}), 400
+
+        filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+        validate_file_exists(filepath)
+
+        df = load_file_dataframe(filepath)
+        cleaned_df = df.copy()
+        log = []
+
+        # Apply per-column cleaning
+        for col, actions in column_options.items():
+            if col not in cleaned_df.columns:
+                continue
+
+            for action in actions:
+                result = apply_column_action(cleaned_df, col, action)
+                if result:
+                    log.append(result)
+
+        # Save cleaned file
+        base_name = os.path.splitext(filename)[0]
+        ext = os.path.splitext(filename)[1].lower()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_base = "".join(c if c.isalnum() or c in "._-" else "_" for c in base_name)
+
+        cleaned_folder = current_app.config.get("CLEANED_FOLDER", "cleaned")
+        os.makedirs(cleaned_folder, exist_ok=True)
+
+        if ext == ".csv":
+            cleaned_filename = f"{safe_base}_cleaned_{timestamp}.csv"
+            cleaned_filepath = os.path.join(cleaned_folder, cleaned_filename)
+            cleaned_df.to_csv(cleaned_filepath, index=False)
+        else:
+            cleaned_filename = f"{safe_base}_cleaned_{timestamp}.xlsx"
+            cleaned_filepath = os.path.join(cleaned_folder, cleaned_filename)
+            cleaned_df.to_excel(cleaned_filepath, index=False)
+
+        # Copy to uploads
+        upload_copy = os.path.join(current_app.config["UPLOAD_FOLDER"], cleaned_filename)
+        try:
+            if ext == ".csv":
+                cleaned_df.to_csv(upload_copy, index=False)
+            else:
+                cleaned_df.to_excel(upload_copy, index=False)
+        except Exception as e:
+            print("Upload copy failed:", e)
+
+        return jsonify({
+            "success": True,
+            "message": "Column cleaning applied!",
+            "cleaned_filename": cleaned_filename,
+            "cleaned_filepath": cleaned_filepath,
+            "original_rows": len(df),
+            "cleaned_rows": len(cleaned_df),
+            "original_columns": len(df.columns),
+            "cleaned_columns": len(cleaned_df.columns),
+            "log": log,
+        })
+
+    except Exception as e:
+        import traceback
+        print("Column Clean Error:", str(e))
+        print(traceback.format_exc())
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+def apply_column_action(df, col, action):
+    """
+    Apply a single cleaning action to a single column.
+    Returns a log dict or None.
+    """
+    import pandas as pd
+    import numpy as np
+
+    try:
+        if action == "trim_whitespace_col":
+            before = df[col].copy()
+            df[col] = df[col].astype("string").str.strip()
+            changed = int((before.astype("string").fillna("__NAN__") != df[col].fillna("__NAN__")).sum())
+            return {
+                "step": f"Trim Whitespace: {col}",
+                "icon": "✂️",
+                "detail": f"Removed leading/trailing spaces",
+                "changed": changed
+            }
+
+        elif action == "lowercase_col":
+            before = df[col].copy()
+            df[col] = df[col].astype("string").str.lower()
+            changed = int((before.astype("string").fillna("__NAN__") != df[col].fillna("__NAN__")).sum())
+            return {
+                "step": f"Lowercase: {col}",
+                "icon": "🔡",
+                "detail": f"Converted to lowercase",
+                "changed": changed
+            }
+
+        elif action == "uppercase_col":
+            before = df[col].copy()
+            df[col] = df[col].astype("string").str.upper()
+            changed = int((before.astype("string").fillna("__NAN__") != df[col].fillna("__NAN__")).sum())
+            return {
+                "step": f"Uppercase: {col}",
+                "icon": "🔠",
+                "detail": f"Converted to uppercase",
+                "changed": changed
+            }
+
+        elif action == "parse_numeric":
+            before = df[col].copy()
+            converted = pd.to_numeric(df[col], errors="coerce")
+            valid = converted.notna().sum()
+            df[col] = converted
+            return {
+                "step": f"Parse Numeric: {col}",
+                "icon": "🔢",
+                "detail": f"Converted {valid} values to numbers",
+                "changed": int(valid)
+            }
+
+        elif action == "fill_missing_num":
+            missing = int(df[col].isnull().sum())
+            if missing == 0:
+                return {"step": f"Fill Missing: {col}", "icon": "🩹", "detail": "No missing values", "changed": 0}
+            series = pd.to_numeric(df[col], errors="coerce")
+            median = series.median()
+            if pd.notna(median):
+                df[col] = series.fillna(median)
+            return {
+                "step": f"Fill Missing (median): {col}",
+                "icon": "🩹",
+                "detail": f"Filled {missing} missing values with {median}",
+                "changed": missing
+            }
+
+        elif action == "fill_missing_text":
+            missing = int(df[col].isnull().sum())
+            if missing == 0:
+                return {"step": f"Fill Missing: {col}", "icon": "🩹", "detail": "No missing values", "changed": 0}
+            mode_val = df[col].mode()
+            if len(mode_val) > 0:
+                df[col] = df[col].fillna(mode_val[0])
+            return {
+                "step": f"Fill Missing (mode): {col}",
+                "icon": "🩹",
+                "detail": f"Filled {missing} missing values",
+                "changed": missing
+            }
+
+        elif action == "fill_missing_date":
+            missing = int(df[col].isnull().sum())
+            if missing == 0:
+                return {"step": f"Fill Missing: {col}", "icon": "🩹", "detail": "No missing values", "changed": 0}
+            df[col] = pd.to_datetime(df[col], errors="coerce")
+            df[col] = df[col].ffill().bfill()
+            return {
+                "step": f"Fill Missing (forward): {col}",
+                "icon": "🩹",
+                "detail": f"Filled {missing} missing dates",
+                "changed": missing
+            }
+
+        elif action == "parse_date_col":
+            before = df[col].copy()
+            converted = pd.to_datetime(df[col], errors="coerce")
+            valid = converted.notna().sum()
+            df[col] = converted
+            return {
+                "step": f"Parse Date: {col}",
+                "icon": "📅",
+                "detail": f"Converted {valid} values to dates",
+                "changed": int(valid)
+            }
+
+        elif action == "remove_negatives_col":
+            before = len(df)
+            series = pd.to_numeric(df[col], errors="coerce")
+            mask = series >= 0
+            mask = mask | series.isnull()
+            df.drop(df[~mask].index, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            removed = before - len(df)
+            return {
+                "step": f"Remove Negatives: {col}",
+                "icon": "➖",
+                "detail": f"Removed {removed} rows with negative values",
+                "removed": removed
+            }
+
+        elif action == "remove_outliers_col":
+            before = len(df)
+            series = pd.to_numeric(df[col], errors="coerce").dropna()
+            if len(series) < 5:
+                return {"step": f"Outliers: {col}", "icon": "📊", "detail": "Not enough data", "removed": 0}
+            q1 = series.quantile(0.25)
+            q3 = series.quantile(0.75)
+            iqr = q3 - q1
+            if iqr == 0:
+                return {"step": f"Outliers: {col}", "icon": "📊", "detail": "No variance", "removed": 0}
+            lower = q1 - 1.5 * iqr
+            upper = q3 + 1.5 * iqr
+            col_series = pd.to_numeric(df[col], errors="coerce")
+            mask = (col_series >= lower) & (col_series <= upper)
+            mask = mask | col_series.isnull()
+            df.drop(df[~mask].index, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            removed = before - len(df)
+            return {
+                "step": f"Remove Outliers: {col}",
+                "icon": "📊",
+                "detail": f"Removed {removed} outlier rows",
+                "removed": removed
+            }
+
+    except Exception as e:
+        print(f"Column action error ({col}, {action}):", e)
+        return {
+            "step": f"Error: {col}",
+            "icon": "❌",
+            "detail": str(e),
+            "changed": 0
+        }
+
+    return None
