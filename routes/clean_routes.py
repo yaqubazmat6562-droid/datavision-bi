@@ -475,3 +475,107 @@ def apply_advanced_cleaning(df, options):
         })
 
     return cleaned, log
+# ==========================================================
+# APPLY CLEANING (SAVE)
+# ==========================================================
+@clean_bp.route("/api/clean-apply", methods=["POST"])
+def api_clean_apply():
+    """
+    Apply cleaning and save the cleaned file.
+    Returns the new cleaned filename.
+    """
+    try:
+        import pandas as pd
+        import numpy as np
+        from datetime import datetime
+        from utils.helpers import load_file_dataframe
+        from utils.validators import validate_file_exists
+
+        data = request.get_json(silent=True) or {}
+        filename = data.get("filename")
+        options = data.get("options", {})
+
+        if not filename:
+            return jsonify({"success": False, "message": "Filename required."}), 400
+
+        filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+        validate_file_exists(filepath)
+
+        df = load_file_dataframe(filepath)
+        cleaned_df, cleaning_log = apply_advanced_cleaning(df, options)
+
+        # Generate cleaned filename
+        base_name = os.path.splitext(filename)[0]
+        ext = os.path.splitext(filename)[1].lower()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Clean the base name (remove weird characters)
+        safe_base = "".join(c if c.isalnum() or c in "._-" else "_" for c in base_name)
+
+        # Save in "cleaned" folder
+        cleaned_folder = current_app.config.get("CLEANED_FOLDER", "cleaned")
+        os.makedirs(cleaned_folder, exist_ok=True)
+
+        if ext == ".csv":
+            cleaned_filename = f"{safe_base}_cleaned_{timestamp}.csv"
+            cleaned_filepath = os.path.join(cleaned_folder, cleaned_filename)
+            cleaned_df.to_csv(cleaned_filepath, index=False)
+        else:
+            # Excel (default)
+            cleaned_filename = f"{safe_base}_cleaned_{timestamp}.xlsx"
+            cleaned_filepath = os.path.join(cleaned_folder, cleaned_filename)
+            cleaned_df.to_excel(cleaned_filepath, index=False)
+
+        # Also save a copy in uploads folder (so it can be used in dashboard)
+        upload_copy = os.path.join(current_app.config["UPLOAD_FOLDER"], cleaned_filename)
+        try:
+            if ext == ".csv":
+                cleaned_df.to_csv(upload_copy, index=False)
+            else:
+                cleaned_df.to_excel(upload_copy, index=False)
+        except Exception as copy_err:
+            print("Upload copy failed:", copy_err)
+
+        return jsonify({
+            "success": True,
+            "message": "Data cleaned successfully!",
+            "cleaned_filename": cleaned_filename,
+            "cleaned_filepath": cleaned_filepath,
+            "original_rows": len(df),
+            "cleaned_rows": len(cleaned_df),
+            "original_columns": len(df.columns),
+            "cleaned_columns": len(cleaned_df.columns),
+            "log": cleaning_log,
+        })
+
+    except Exception as e:
+        import traceback
+        print("Clean Apply Error:", str(e))
+        print(traceback.format_exc())
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ==========================================================
+# DOWNLOAD CLEANED FILE
+# ==========================================================
+@clean_bp.route("/api/clean-download/<path:filename>", methods=["GET"])
+def api_clean_download(filename):
+    """
+    Download a cleaned file.
+    """
+    try:
+        from flask import send_file
+        cleaned_folder = current_app.config.get("CLEANED_FOLDER", "cleaned")
+        filepath = os.path.join(cleaned_folder, filename)
+
+        if not os.path.isfile(filepath):
+            return jsonify({"success": False, "message": "File not found."}), 404
+
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500

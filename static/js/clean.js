@@ -596,8 +596,136 @@
     // ============================================
     // APPLY CLEANING (will be fully done in Chunk 4)
     // ============================================
-    function applyCleaning() {
-        alert("✅ Clean data ready! Download feature coming in Chunk 4.");
+        // ============================================
+    // APPLY CLEANING (REAL)
+    // ============================================
+    async function applyCleaning() {
+        if (!cleanData) return;
+
+        var options = {};
+        OPTION_KEYS.forEach(function(key) {
+            var cb = document.getElementById("opt_" + key);
+            options[key] = cb ? cb.checked : false;
+        });
+
+        var selectedCount = Object.keys(options).filter(function(k) { return options[k]; }).length;
+        if (selectedCount === 0) {
+            alert("Please select at least one cleaning option.");
+            return;
+        }
+
+        var btns = document.querySelectorAll(".clean-preview-actions button");
+        btns.forEach(function(b) { b.disabled = true; });
+
+        try {
+            var response = await fetch("/api/clean-apply", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    filename: window.CLEAN_FILENAME,
+                    options: options
+                })
+            });
+
+            var data = await response.json();
+
+            if (!data.success) {
+                alert("Cleaning failed: " + (data.message || "Unknown error"));
+                btns.forEach(function(b) { b.disabled = false; });
+                return;
+            }
+
+            // Store for download
+            window.__cleanedFile = data;
+
+            // Render result modal
+            renderResultModal(data);
+            document.getElementById("cleanResultModal").classList.remove("hidden");
+
+            btns.forEach(function(b) { b.disabled = false; });
+
+        } catch (error) {
+            console.error("Apply error:", error);
+            alert("Cleaning failed: " + error.message);
+            btns.forEach(function(b) { b.disabled = false; });
+        }
+    }
+
+    // ============================================
+    // RENDER RESULT MODAL
+    // ============================================
+    function renderResultModal(data) {
+        document.getElementById("resultRows").textContent =
+            formatNumber(data.original_rows) + " → " + formatNumber(data.cleaned_rows);
+        document.getElementById("resultCols").textContent =
+            formatNumber(data.original_columns) + " → " + formatNumber(data.cleaned_columns);
+
+        // Total changes (sum of log)
+        var totalChanges = 0;
+        (data.log || []).forEach(function(item) {
+            if (item.changed) totalChanges += item.changed;
+            if (item.removed) totalChanges += item.removed;
+        });
+        document.getElementById("resultChanges").textContent = formatNumber(totalChanges);
+
+        document.getElementById("resultFilename").textContent = data.cleaned_filename;
+
+        // Format label
+        var ext = data.cleaned_filename.split(".").pop().toUpperCase();
+        document.getElementById("downloadFileFormat").textContent = ext;
+
+        // Preview table (first 20 rows)
+        if (window.__cleanPreviewData && window.__cleanPreviewData.preview) {
+            renderPreviewTable(
+                window.__cleanPreviewData.preview,
+                window.__cleanPreviewData.columns
+            );
+            // Move to result modal preview container
+            var table = document.querySelector("#cleanPreviewTable");
+            if (table) {
+                document.getElementById("cleanResultPreviewTable").innerHTML = table.innerHTML;
+            }
+        }
+    }
+
+    // ============================================
+    // CLOSE RESULT MODAL
+    // ============================================
+    function closeCleanResultModal() {
+        document.getElementById("cleanResultModal").classList.add("hidden");
+    }
+
+    // ============================================
+    // DOWNLOAD CLEANED FILE
+    // ============================================
+    function downloadCleanedFile() {
+        if (!window.__cleanedFile || !window.__cleanedFile.cleaned_filename) {
+            alert("No cleaned file available. Please clean data first.");
+            return;
+        }
+        var url = "/api/clean-download/" + encodeURIComponent(window.__cleanedFile.cleaned_filename);
+        window.open(url, "_blank");
+    }
+
+    // ============================================
+    // USE CLEANED FILE IN DASHBOARD
+    // ============================================
+    function useCleanedFile() {
+        if (!window.__cleanedFile || !window.__cleanedFile.cleaned_filename) {
+            alert("No cleaned file available.");
+            return;
+        }
+
+        var filename = window.__cleanedFile.cleaned_filename;
+
+        // Store in localStorage so main page can pick it up
+        try {
+            localStorage.setItem("datavision_pending_file", filename);
+        } catch (e) {}
+
+        // Open main app in new tab
+        var url = "/?use_file=" + encodeURIComponent(filename);
+        window.open(url, "_blank");
     }
     // ============================================
     // FILTER COLUMNS
@@ -671,5 +799,8 @@
     window.previewCleaning = previewCleaning;
     window.hidePreview = hidePreview;
     window.applyCleaning = applyCleaning;
+    window.closeCleanResultModal = closeCleanResultModal;
+    window.downloadCleanedFile = downloadCleanedFile;
+    window.useCleanedFile = useCleanedFile;
 
 })();

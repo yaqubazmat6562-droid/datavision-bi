@@ -231,6 +231,108 @@ var CHART_COLORS = [
             showMessage("Upload failed: " + error.message, "error");
         }
     }
+        // ==========================================================
+    // CHECK FOR CLEANED FILE (from URL param)
+    // ==========================================================
+    function checkPendingCleanedFile() {
+        var params = new URLSearchParams(window.location.search);
+        var useFile = params.get("use_file");
+
+        if (!useFile) {
+            // Fallback: check localStorage
+            try {
+                var pending = localStorage.getItem("datavision_pending_file");
+                if (pending) {
+                    useFile = pending;
+                    localStorage.removeItem("datavision_pending_file");
+                }
+            } catch (e) {}
+        }
+
+        if (useFile) {
+            // Trigger upload-like flow: show profile
+            showMessage("Loading cleaned file: " + useFile, "info");
+            // We can't upload it (it's already uploaded), so just set it as current
+            appState.currentFilename = useFile;
+            appState.dashboardFilename = useFile;
+            document.getElementById("fileName").innerText = useFile;
+
+            // Fetch file info via upload endpoint's helper (or use explorer overview)
+            fetchCleanedFileInfo(useFile);
+        }
+    }
+
+    async function fetchCleanedFileInfo(filename) {
+        try {
+            var formData = new FormData();
+            formData.append("filename", filename);
+
+            var response = await fetch("/explorer/overview", {
+                method: "POST",
+                body: formData
+            });
+            var result = await response.json();
+
+            if (!result.success) return;
+
+            // Build a fake profile response
+            var profileData = {
+                filename: filename,
+                rows: result.data.rows,
+                columns: result.data.columns,
+                missing_values: result.data.missing_values,
+                duplicate_rows: result.data.duplicate_rows,
+                numeric_columns: [],
+                date_columns: [],
+                text_columns: [],
+                preview: []
+            };
+
+            // Get profile
+            var profileResponse = await fetch("/explorer/profile", {
+                method: "POST",
+                body: (function() {
+                    var fd = new FormData();
+                    fd.append("filename", filename);
+                    return fd;
+                })()
+            });
+            var profileResult = await profileResponse.json();
+
+            if (profileResult.success) {
+                profileResult.profile.forEach(function(col) {
+                    if (col.data_type.indexOf("int") !== -1 || col.data_type.indexOf("float") !== -1) {
+                        profileData.numeric_columns.push(col.column);
+                    } else if (col.data_type.indexOf("datetime") !== -1) {
+                        profileData.date_columns.push(col.column);
+                    } else {
+                        profileData.text_columns.push(col.column);
+                    }
+                });
+            }
+
+            // Get preview
+            var previewResponse = await fetch("/explorer/filter", {
+                method: "POST",
+                body: (function() {
+                    var fd = new FormData();
+                    fd.append("filename", filename);
+                    return fd;
+                })()
+            });
+            var previewResult = await previewResponse.json();
+            if (previewResult.success && previewResult.data) {
+                profileData.preview = previewResult.data.slice(0, 10);
+            }
+
+            displayProfile(profileData);
+            displayPreview(profileData.preview);
+            showMessage("✅ Cleaned file loaded: " + filename, "success");
+
+        } catch (error) {
+            console.error("Load cleaned file error:", error);
+        }
+    }
 
     function displayProfile(data) {
         var section = document.getElementById("profileSection");
@@ -1732,6 +1834,7 @@ function hexToRgba(hex, alpha) {
     window.resetQuery = resetQuery;
     window.runExplorerSearch = runExplorerSearch;
     window.loadExplorerProfile = loadExplorerProfile;
+    window.checkPendingCleanedFile = checkPendingCleanedFile;
 
     // ==========================================================
     // ADDITIONAL CHARTS
@@ -2749,6 +2852,7 @@ function hexToRgba(hex, alpha) {
 document.addEventListener("DOMContentLoaded", function() {
     checkAuthState();
     loadKPICustomization();
+    checkPendingCleanedFile();
 });
 
 async function checkAuthState() {

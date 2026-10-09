@@ -331,6 +331,77 @@
         <div id="cleanPreviewTable" class="clean-table-container"></div>
     </div>
 </section>
+<!-- Result Modal -->
+<div id="cleanResultModal" class="clean-result-modal hidden">
+    <div class="clean-result-box">
+        <div class="clean-result-header">
+            <div class="clean-result-icon">✅</div>
+            <div>
+                <h2>Data Cleaned Successfully!</h2>
+                <p id="cleanResultSubtitle">Your cleaned file is ready</p>
+            </div>
+            <button class="clean-result-close" onclick="closeCleanResultModal()">×</button>
+        </div>
+
+        <div class="clean-result-body">
+
+            <!-- Before/After Summary -->
+            <div class="clean-result-summary">
+                <div class="clean-result-stat">
+                    <div class="clean-result-label">Rows</div>
+                    <div class="clean-result-value" id="resultRows">0</div>
+                </div>
+                <div class="clean-result-stat">
+                    <div class="clean-result-label">Columns</div>
+                    <div class="clean-result-value" id="resultCols">0</div>
+                </div>
+                <div class="clean-result-stat">
+                    <div class="clean-result-label">Total Changes</div>
+                    <div class="clean-result-value" id="resultChanges">0</div>
+                </div>
+            </div>
+
+            <!-- Filename -->
+            <div class="clean-result-filename">
+                <div class="clean-result-filename-label">📁 Saved As</div>
+                <div class="clean-result-filename-value" id="resultFilename">--</div>
+            </div>
+
+            <!-- Download Options -->
+            <div class="clean-result-download">
+                <h3>📥 Download Your Cleaned File</h3>
+                <div class="clean-result-download-btns">
+                    <button class="clean-download-btn" id="downloadExcelBtn" onclick="downloadCleanedFile()">
+                        <span>📊</span>
+                        <div>
+                            <strong>Download File</strong>
+                            <small id="downloadFileFormat">Excel / CSV</small>
+                        </div>
+                    </button>
+                    <button class="clean-download-btn" onclick="useCleanedFile()">
+                        <span>🚀</span>
+                        <div>
+                            <strong>Use in Dashboard</strong>
+                            <small>Analyze cleaned data</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cleaned Preview -->
+            <div class="clean-result-preview">
+                <h3>👁️ Cleaned Data Preview</h3>
+                <div id="cleanResultPreviewTable" class="clean-table-container"></div>
+            </div>
+
+        </div>
+
+        <div class="clean-result-footer">
+            <button class="clean-btn" onclick="closeCleanResultModal()">Close</button>
+            <button class="clean-btn-primary" onclick="downloadCleanedFile()">📥 Download Now</button>
+        </div>
+    </div>
+</div>
 
         </main>
 
