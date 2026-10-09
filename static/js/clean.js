@@ -457,7 +457,8 @@
 
             // Store for download
             window.__cleanedFile = data;
-
+           // Save to history
+            await saveHistoryEntry(data, "column");
             // Show result modal
             renderColumnResultModal(data);
             document.getElementById("cleanResultModal").classList.remove("hidden");
@@ -476,7 +477,264 @@
             }
         }
     }
+         // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+    function showToast(message, type) {
+        type = type || "info";
+        var icons = {
+            success: "✅",
+            error: "❌",
+            warning: "⚠️",
+            info: "ℹ️"
+        };
 
+        var container = document.getElementById("toastContainer");
+        if (!container) return;
+
+        var toast = document.createElement("div");
+        toast.className = "toast " + type;
+        toast.innerHTML =
+            '<span class="toast-icon">' + (icons[type] || "ℹ️") + '</span>' +
+            '<span class="toast-message">' + escapeHtml(message) + '</span>';
+
+        container.appendChild(toast);
+
+        setTimeout(function() {
+            toast.classList.add("removing");
+            setTimeout(function() {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 300);
+        }, 3500);
+    }
+
+    // ============================================
+    // HISTORY MODAL
+    // ============================================
+    async function openHistoryModal() {
+        document.getElementById("cleanHistoryModal").classList.remove("hidden");
+        await loadHistoryList();
+    }
+
+    function closeHistoryModal() {
+        document.getElementById("cleanHistoryModal").classList.add("hidden");
+    }
+
+    async function loadHistoryList() {
+        var list = document.getElementById("cleanHistoryList");
+        if (!list) return;
+
+        list.innerHTML = '<div class="clean-history-empty">Loading...</div>';
+
+        try {
+            var response = await fetch("/api/clean-history");
+            var data = await response.json();
+
+            if (!data.success) {
+                list.innerHTML = '<div class="clean-history-empty">Failed to load</div>';
+                return;
+            }
+
+            if (!data.history || data.history.length === 0) {
+                list.innerHTML = '<div class="clean-history-empty">No cleaning history yet</div>';
+                return;
+            }
+
+            list.innerHTML = "";
+
+            data.history.forEach(function(item) {
+                var el = document.createElement("div");
+                el.className = "clean-history-item";
+
+                var date = new Date(item.timestamp);
+                var dateStr = date.toLocaleString();
+
+                var icon = item.mode === "column" ? "🎯" : "🧹";
+                var removed = (item.rows_before || 0) - (item.rows_after || 0);
+
+                el.innerHTML =
+                    '<span class="clean-history-icon">' + icon + '</span>' +
+                    '<div class="clean-history-info">' +
+                        '<div class="clean-history-filename">' + escapeHtml(item.cleaned_file || "Unknown") + '</div>' +
+                        '<div class="clean-history-meta">' +
+                            '<span>📅 ' + dateStr + '</span>' +
+                            '<span>📊 ' + (item.rows_before || 0) + ' → ' + (item.rows_after || 0) + ' rows</span>' +
+                            '<span>🔧 ' + (item.changes || 0) + ' changes</span>' +
+                        '</div>' +
+                    '</div>' +
+                    (removed > 0 ? '<span class="clean-history-badge">' + removed + ' rows removed</span>' : '<span class="clean-history-badge" style="background:#f1f5f9;color:#64748b;">No rows removed</span>');
+
+                list.appendChild(el);
+            });
+
+        } catch (error) {
+            console.error("History load error:", error);
+            list.innerHTML = '<div class="clean-history-empty">Error: ' + error.message + '</div>';
+        }
+    }
+
+    function clearHistory() {
+        if (!confirm("Clear all cleaning history? This cannot be undone.")) return;
+        // For simplicity, just clear localStorage-based UI (real file keeps history)
+        showToast("History is stored on server. Clear manually from cleaned/history.json", "info");
+    }
+
+    // ============================================
+    // PDF EXPORT
+    // ============================================
+    function exportCleanReportPDF() {
+        var section = document.getElementById("previewSection");
+        if (!section || section.style.display === "none") {
+            showToast("Please click Preview Cleaning first", "warning");
+            return;
+        }
+
+        if (typeof html2pdf === "undefined") {
+            showToast("PDF library not loaded", "error");
+            return;
+        }
+
+        showToast("Generating PDF report...", "info");
+
+        var filename = (window.CLEAN_FILENAME || "cleaning_report").replace(/\.[^/.]+$/, "");
+        var now = new Date();
+        var ts = now.getFullYear() +
+            String(now.getMonth() + 1).padStart(2, "0") +
+            String(now.getDate()).padStart(2, "0") + "_" +
+            String(now.getHours()).padStart(2, "0") +
+            String(now.getMinutes()).padStart(2, "0");
+
+        var options = {
+            margin: [10, 10, 10, 10],
+            filename: filename + "_report_" + ts + ".pdf",
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+        };
+
+        // Wrap content with a header
+        var wrapper = document.createElement("div");
+        wrapper.style.padding = "20px";
+        wrapper.style.background = "white";
+
+        var header = document.createElement("div");
+        header.style.cssText = "margin-bottom:20px;padding-bottom:16px;border-bottom:3px solid #00b4d8;";
+        header.innerHTML =
+            '<h1 style="margin:0;color:#0b1f3a;font-size:24px;">DATAVISION BI</h1>' +
+            '<p style="margin:5px 0 0;color:#64748b;font-size:13px;">Data Cleaning Report</p>' +
+            '<p style="margin:5px 0 0;color:#94a3b8;font-size:11px;">' +
+                'File: ' + escapeHtml(window.CLEAN_FILENAME) + ' · Generated: ' + now.toLocaleString() +
+            '</p>';
+
+        wrapper.appendChild(header);
+
+        // Clone the preview section
+        var clone = section.cloneNode(true);
+        clone.style.display = "block";
+        wrapper.appendChild(clone);
+
+        document.body.appendChild(wrapper);
+
+        html2pdf().set(options).from(wrapper).save().then(function() {
+            document.body.removeChild(wrapper);
+            showToast("PDF report downloaded!", "success");
+        }).catch(function(err) {
+            console.error("PDF error:", err);
+            if (wrapper.parentNode) document.body.removeChild(wrapper);
+            showToast("PDF generation failed", "error");
+        });
+    }
+
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    function setupKeyboardShortcuts() {
+        // Add hint
+        var hint = document.createElement("div");
+        hint.className = "clean-shortcut-hint";
+        hint.innerHTML =
+            '<span><kbd>P</kbd>Preview</span>' +
+            '<span><kbd>A</kbd>Apply</span>' +
+            '<span><kbd>H</kbd>History</span>' +
+            '<span><kbd>Esc</kbd>Close</span>';
+        document.body.appendChild(hint);
+
+        document.addEventListener("keydown", function(e) {
+            // Skip if user is typing in input
+            if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+            // Esc: close modals
+            if (e.key === "Escape") {
+                var resultModal = document.getElementById("cleanResultModal");
+                var historyModal = document.getElementById("cleanHistoryModal");
+                if (resultModal && !resultModal.classList.contains("hidden")) {
+                    closeCleanResultModal();
+                }
+                if (historyModal && !historyModal.classList.contains("hidden")) {
+                    closeHistoryModal();
+                }
+                return;
+            }
+
+            // P: Preview
+            if (e.key === "p" || e.key === "P") {
+                if (!e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    previewCleaning();
+                }
+            }
+
+            // A: Apply
+            if (e.key === "a" || e.key === "A") {
+                if (!e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    var previewSection = document.getElementById("previewSection");
+                    if (previewSection && previewSection.style.display !== "none") {
+                        applyCleaning();
+                    } else {
+                        showToast("Please preview first (press P)", "warning");
+                    }
+                }
+            }
+
+            // H: History
+            if (e.key === "h" || e.key === "H") {
+                if (!e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    openHistoryModal();
+                }
+            }
+        });
+    }
+
+    // ============================================
+    // SAVE HISTORY AFTER CLEANING
+    // ============================================
+    async function saveHistoryEntry(data, mode) {
+        try {
+            var totalChanges = 0;
+            (data.log || []).forEach(function(item) {
+                if (item.changed) totalChanges += item.changed;
+                if (item.removed) totalChanges += item.removed;
+            });
+
+            await fetch("/api/clean-history/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    original_file: window.CLEAN_FILENAME,
+                    cleaned_file: data.cleaned_filename,
+                    rows_before: data.original_rows,
+                    rows_after: data.cleaned_rows,
+                    changes: totalChanges,
+                    mode: mode
+                })
+            });
+        } catch (e) {
+            console.error("History save error:", e);
+        }
+    }
     // ============================================
     // RENDER COLUMN RESULT MODAL
     // ============================================
@@ -735,7 +993,7 @@
 
         var selectedCount = Object.keys(options).filter(function(k) { return options[k]; }).length;
         if (selectedCount === 0) {
-            alert("Please select at least one cleaning option.");
+            showToast("Please select at least one cleaning option.", "warning");
             return;
         }
 
@@ -934,7 +1192,7 @@
 
         var selectedCount = Object.keys(options).filter(function(k) { return options[k]; }).length;
         if (selectedCount === 0) {
-            alert("Please select at least one cleaning option.");
+            showToast("Please select at least one cleaning option.", "warning");
             return;
         }
 
@@ -961,7 +1219,8 @@
 
             // Store for download
             window.__cleanedFile = data;
-
+           // Save to history
+            await saveHistoryEntry(data, "global");
             // Render result modal
             renderResultModal(data);
             document.getElementById("cleanResultModal").classList.remove("hidden");
@@ -974,7 +1233,7 @@
             btns.forEach(function(b) { b.disabled = false; });
         }
     }
-
+    
     // ============================================
     // RENDER RESULT MODAL
     // ============================================
@@ -1112,6 +1371,7 @@
     // ============================================
     document.addEventListener("DOMContentLoaded", function() {
         loadCleanInfo();
+        setupKeyboardShortcuts();
     });
 
     // Expose globally
@@ -1129,5 +1389,10 @@
     window.selectAllColumns = selectAllColumns;
     window.selectNoColumns = selectNoColumns;
     window.applyColumnCleaning = applyColumnCleaning;
+    window.openHistoryModal = openHistoryModal;
+    window.closeHistoryModal = closeHistoryModal;
+    window.clearHistory = clearHistory;
+    window.exportCleanReportPDF = exportCleanReportPDF;
+    window.showToast = showToast;
 
 })();

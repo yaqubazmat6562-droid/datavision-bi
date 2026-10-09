@@ -827,3 +827,85 @@ def apply_column_action(df, col, action):
         }
 
     return None
+# ==========================================================
+# CLEANING HISTORY (Track all cleanings)
+# ==========================================================
+CLEANING_HISTORY_FILE = "cleaned/history.json"
+
+
+@clean_bp.route("/api/clean-history", methods=["GET"])
+def api_clean_history():
+    """
+    Get cleaning history.
+    """
+    try:
+        import json
+        history_path = os.path.join(
+            current_app.config.get("CLEANED_FOLDER", "cleaned"),
+            "history.json"
+        )
+
+        if not os.path.exists(history_path):
+            return jsonify({"success": True, "history": []})
+
+        with open(history_path, "r", encoding="utf-8") as f:
+            history = json.load(f)
+
+        # Return latest 50
+        return jsonify({
+            "success": True,
+            "history": history[-50:][::-1]  # Latest first
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@clean_bp.route("/api/clean-history/add", methods=["POST"])
+def api_clean_history_add():
+    """
+    Add a cleaning event to history.
+    """
+    try:
+        import json
+        from datetime import datetime
+
+        data = request.get_json(silent=True) or {}
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "original_file": data.get("original_file", ""),
+            "cleaned_file": data.get("cleaned_file", ""),
+            "rows_before": data.get("rows_before", 0),
+            "rows_after": data.get("rows_after", 0),
+            "changes": data.get("changes", 0),
+            "mode": data.get("mode", "global"),  # "global" or "column"
+        }
+
+        history_path = os.path.join(
+            current_app.config.get("CLEANED_FOLDER", "cleaned"),
+            "history.json"
+        )
+
+        # Load existing
+        history = []
+        if os.path.exists(history_path):
+            try:
+                with open(history_path, "r", encoding="utf-8") as f:
+                    history = json.load(f)
+            except Exception:
+                history = []
+
+        history.append(entry)
+
+        # Keep only last 100
+        history = history[-100:]
+
+        # Save
+        os.makedirs(os.path.dirname(history_path), exist_ok=True)
+        with open(history_path, "w", encoding="utf-8") as f:
+            json.dump(history, f, indent=2)
+
+        return jsonify({"success": True, "message": "History updated"})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
