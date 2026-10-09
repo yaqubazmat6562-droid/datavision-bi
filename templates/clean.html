@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Data Clean - DATAVISION BI</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2300b4d8'/><text x='50' y='68' font-size='60' font-weight='bold' fill='white' text-anchor='middle' font-family='Arial'>DV</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/clean.css') }}">
+</head>
+<body class="clean-page">
+
+    <!-- Loading -->
+    <div id="cleanLoading" class="clean-loading">
+        <div class="clean-loader"></div>
+        <p>Analyzing your data...</p>
+        <span id="cleanLoadingMsg">Loading {{ filename }}</span>
+    </div>
+
+    <!-- Main Container -->
+    <div id="cleanContainer" class="clean-container" style="display:none;">
+
+        <!-- Header -->
+        <header class="clean-header">
+            <div class="clean-brand">
+                <span class="clean-logo">🧹</span>
+                <div>
+                    <h1>Advanced Data Clean</h1>
+                    <p id="cleanFilename">{{ filename }}</p>
+                </div>
+            </div>
+
+            <div class="clean-actions">
+                <button onclick="refreshCleanInfo()" class="clean-btn">🔄 Refresh</button>
+                <button onclick="window.close()" class="clean-btn danger">✕ Close</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="clean-main">
+
+            <!-- Overview Stats -->
+            <section class="clean-section">
+                <h2 class="clean-section-title">📊 Data Overview</h2>
+                <div id="cleanOverview" class="clean-stats-grid"></div>
+            </section>
+
+            <!-- Quality Score -->
+            <section class="clean-section">
+                <h2 class="clean-section-title">🎯 Data Quality Score</h2>
+                <div id="cleanQualityScore" class="clean-quality-box"></div>
+            </section>
+
+            <!-- Column Profiles -->
+            <section class="clean-section">
+                <div class="clean-section-header">
+                    <h2 class="clean-section-title" style="margin-bottom:0;border:none;padding:0;">📋 Column Profiles</h2>
+                    <div class="clean-column-filters">
+                        <button class="clean-filter-btn active" data-filter="all" onclick="filterColumns('all')">All</button>
+                        <button class="clean-filter-btn" data-filter="numeric" onclick="filterColumns('numeric')">Numeric</button>
+                        <button class="clean-filter-btn" data-filter="text" onclick="filterColumns('text')">Text</button>
+                        <button class="clean-filter-btn" data-filter="date" onclick="filterColumns('date')">Date</button>
+                        <button class="clean-filter-btn" data-filter="issues" onclick="filterColumns('issues')">⚠️ Issues</button>
+                    </div>
+                </div>
+                <div id="cleanColumnProfiles" class="clean-table-container"></div>
+            </section>
+
+            <!-- Cleaning Options -->
+<section class="clean-section">
+    <div class="clean-section-header">
+        <div>
+            <h2 class="clean-section-title" style="margin-bottom:0;border:none;padding:0;">⚙️ Cleaning Options</h2>
+            <p style="font-size:12px;color:#64748b;margin-top:4px;">Select what you want to clean. Safe options are pre-selected.</p>
+        </div>
+        <div class="clean-option-actions">
+            <button class="clean-btn-small" onclick="selectSafeOptions()">✅ Safe Only</button>
+            <button class="clean-btn-small" onclick="selectAllOptions()">✔️ Select All</button>
+            <button class="clean-btn-small" onclick="clearAllOptions()">✖ Clear All</button>
+        </div>
+    </div>
+
+    <div class="clean-options-grid">
+
+        <!-- BASIC CLEANING -->
+        <div class="clean-option-group">
+            <h3 class="clean-group-title">🧹 Basic Cleaning</h3>
+
+            <label class="clean-option-card" data-option="remove_empty_rows">
+                <input type="checkbox" id="opt_remove_empty_rows" checked>
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">🗑️</div>
+                    <div>
+                        <div class="clean-option-title">Remove Empty Rows</div>
+                        <div class="clean-option-desc">Delete rows where all values are empty</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_remove_empty_rows">--</div>
+            </label>
+
+            <label class="clean-option-card" data-option="remove_empty_columns">
+                <input type="checkbox" id="opt_remove_empty_columns" checked>
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">📭</div>
+                    <div>
+                        <div class="clean-option-title">Remove Empty Columns</div>
+                        <div class="clean-option-desc">Delete columns where all values are empty</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_remove_empty_columns">--</div>
+            </label>
+
+            <label class="clean-option-card" data-option="remove_duplicates">
+                <input type="checkbox" id="opt_remove_duplicates" checked>
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">♻️</div>
+                    <div>
+                        <div class="clean-option-title">Remove Duplicate Rows</div>
+                        <div class="clean-option-desc">Keep first occurrence, remove exact duplicates</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_remove_duplicates">--</div>
+            </label>
+
+            <label class="clean-option-card" data-option="standardize_nulls">
+                <input type="checkbox" id="opt_standardize_nulls" checked>
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">🔄</div>
+                    <div>
+                        <div class="clean-option-title">Standardize Null Values</div>
+                        <div class="clean-option-desc">Convert NA, N/A, null, -, -- to empty</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_standardize_nulls">--</div>
+            </label>
+        </div>
+
+        <!-- TEXT CLEANING -->
+        <div class="clean-option-group">
+            <h3 class="clean-group-title">📝 Text Cleaning</h3>
+
+            <label class="clean-option-card" data-option="trim_whitespace">
+                <input type="checkbox" id="opt_trim_whitespace" checked>
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">✂️</div>
+                    <div>
+                        <div class="clean-option-title">Trim Whitespace</div>
+                        <div class="clean-option-desc">Remove leading and trailing spaces</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_trim_whitespace">--</div>
+            </label>
+
+            <label class="clean-option-card" data-option="lowercase_text">
+                <input type="checkbox" id="opt_lowercase_text">
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">🔡</div>
+                    <div>
+                        <div class="clean-option-title">Lowercase Text Columns</div>
+                        <div class="clean-option-desc">Convert all text values to lowercase</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_lowercase_text">--</div>
+            </label>
+
+            <label class="clean-option-card" data-option="uppercase_text">
+                <input type="checkbox" id="opt_uppercase_text">
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">🔠</div>
+                    <div>
+                        <div class="clean-option-title">Uppercase Text Columns</div>
+                        <div class="clean-option-desc">Convert all text values to uppercase</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_uppercase_text">--</div>
+            </label>
+        </div>
+
+        <!-- NUMERIC CLEANING -->
+        <div class="clean-option-group">
+            <h3 class="clean-group-title">🔢 Numeric Cleaning</h3>
+
+            <label class="clean-option-card" data-option="parse_numeric">
+                <input type="checkbox" id="opt_parse_numeric" checked>
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">🔢</div>
+                    <div>
+                        <div class="clean-option-title">Auto-Convert Numeric Text</div>
+                        <div class="clean-option-desc">Convert "123" strings to actual numbers</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_parse_numeric">--</div>
+            </label>
+
+            <label class="clean-option-card" data-option="parse_dates">
+                <input type="checkbox" id="opt_parse_dates" checked>
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">📅</div>
+                    <div>
+                        <div class="clean-option-title">Auto-Parse Dates</div>
+                        <div class="clean-option-desc">Detect and convert date strings</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_parse_dates">--</div>
+            </label>
+        </div>
+
+        <!-- ADVANCED -->
+        <div class="clean-option-group">
+            <h3 class="clean-group-title">⚠️ Advanced (Optional)</h3>
+
+            <label class="clean-option-card danger" data-option="remove_outliers">
+                <input type="checkbox" id="opt_remove_outliers">
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">📊</div>
+                    <div>
+                        <div class="clean-option-title">Remove Outliers (IQR)</div>
+                        <div class="clean-option-desc">Remove extreme values beyond 1.5× IQR</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_remove_outliers">--</div>
+            </label>
+
+            <label class="clean-option-card danger" data-option="remove_negatives">
+                <input type="checkbox" id="opt_remove_negatives">
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">➖</div>
+                    <div>
+                        <div class="clean-option-title">Remove Negative Values</div>
+                        <div class="clean-option-desc">Remove rows with negative numeric values</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_remove_negatives">--</div>
+            </label>
+
+            <label class="clean-option-card" data-option="fill_missing">
+                <input type="checkbox" id="opt_fill_missing">
+                <div class="clean-option-content">
+                    <div class="clean-option-icon">🩹</div>
+                    <div>
+                        <div class="clean-option-title">Fill Missing Values</div>
+                        <div class="clean-option-desc">Fill numeric with median, text with mode</div>
+                    </div>
+                </div>
+                <div class="clean-option-impact" id="impact_fill_missing">--</div>
+            </label>
+        </div>
+
+    </div>
+</section>
+
+<!-- Impact Summary -->
+<section class="clean-section clean-impact-summary">
+    <div class="clean-section-header">
+        <div>
+            <h2 class="clean-section-title" style="margin-bottom:0;border:none;padding:0;">📊 Impact Summary</h2>
+            <p style="font-size:12px;color:#64748b;margin-top:4px;">Estimated changes after applying selected options</p>
+        </div>
+        <div class="clean-summary-actions">
+            <span class="clean-options-count" id="cleanOptionsCount">0 selected</span>
+        </div>
+    </div>
+
+    <div class="clean-impact-grid">
+        <div class="clean-impact-card">
+            <div class="clean-impact-label">Rows Will Change</div>
+            <div class="clean-impact-value" id="impactRowsChange">0</div>
+            <div class="clean-impact-sub" id="impactRowsChangePct">0%</div>
+        </div>
+        <div class="clean-impact-card">
+            <div class="clean-impact-label">Columns Will Change</div>
+            <div class="clean-impact-value" id="impactColsChange">0</div>
+            <div class="clean-impact-sub" id="impactColsChangePct">0%</div>
+        </div>
+        <div class="clean-impact-card">
+            <div class="clean-impact-label">Cells Will Change</div>
+            <div class="clean-impact-value" id="impactCellsChange">0</div>
+            <div class="clean-impact-sub" id="impactCellsChangePct">0%</div>
+        </div>
+    </div>
+</section>
+
+        </main>
+
+        <footer class="clean-footer">
+            <span>DATAVISION BI © 2026</span>
+            <span id="cleanLastUpdated">--</span>
+        </footer>
+
+    </div>
+
+    <script>
+        window.CLEAN_FILENAME = "{{ filename }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/clean.js') }}"></script>
+
+</body>
+</html>

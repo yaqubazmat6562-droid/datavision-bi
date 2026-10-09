@@ -299,41 +299,23 @@ var CHART_COLORS = [
     // ==========================================================
     // CLEAN DATA
     // ==========================================================
-    async function cleanData() {
-        var fileElement = document.getElementById("fileName");
-        if (!fileElement) {
-            alert("Please upload a file first.");
-            return;
-        }
-
-        var filename = fileElement.innerText.trim();
-        if (!filename || filename === "File") {
-            alert("Please upload a file first.");
-            return;
-        }
-
-        showLoading();
-        var formData = new FormData();
-        formData.append("filename", filename);
-
-        try {
-            var response = await fetch("/clean", { method: "POST", body: formData });
-            var data = await response.json();
-            hideLoading();
-
-            if (!data.success) {
-                showMessage(data.message, "error");
-                return;
-            }
-
-            showMessage(data.message, "success");
-            displayCleaningReport(data.report);
-
-        } catch (error) {
-            hideLoading();
-            showMessage("Cleaning failed: " + error.message, "error");
-        }
+    function cleanData() {
+    var fileElement = document.getElementById("fileName");
+    if (!fileElement) {
+        alert("Please upload a file first.");
+        return;
     }
+
+    var filename = fileElement.innerText.trim();
+    if (!filename || filename === "File") {
+        alert("Please upload a file first.");
+        return;
+    }
+
+    // Open advanced clean page in new tab
+    var url = "/clean-advanced?filename=" + encodeURIComponent(filename);
+    window.open(url, "_blank");
+}
 
     function displayCleaningReport(report) {
         var existing = document.getElementById("cleaningReport");
